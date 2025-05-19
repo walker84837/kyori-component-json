@@ -562,3 +562,34 @@ impl fmt::Display for NamedColor {
         write!(f, "{}", s)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_message() {
+        let raw_json = r#"
+        {
+          "text": "Hello, ",
+          "color": "yellow",
+          "extra": [
+            {
+              "text": "World!",
+              "color": "white",
+              "bold": true
+            },
+            {
+              "translate": "chat.type.say",
+              "with": [
+                { "selector": "@p" }
+              ]
+            }
+          ]
+        }
+        "#;
+
+        let component: Component = serde_json::from_str(raw_json).unwrap();
+        println!("Message: {component:#?}");
+    }
+}
