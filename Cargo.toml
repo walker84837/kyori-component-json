@@ -2,6 +2,9 @@
 name = "kyori-component-json"
 version = "0.1.0"
 edition = "2024"
+description = "A library for serializing and deserializing Kyori Component JSON files"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/walker84837/kyori-component-json"
 
 [dependencies]
 serde = { version = "1.0.219", features = ["derive"] }
