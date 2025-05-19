@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -219,6 +220,45 @@ pub struct ComponentObject {
     pub hover_event: Option<HoverEvent>,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct Style {
+    pub color: Option<Color>,
+    pub font: Option<String>,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub underlined: Option<bool>,
+    pub strikethrough: Option<bool>,
+    pub obfuscated: Option<bool>,
+    pub shadow_color: Option<ShadowColor>,
+    pub insertion: Option<String>,
+    pub click_event: Option<ClickEvent>,
+    pub hover_event: Option<HoverEvent>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TextDecoration {
+    Bold,
+    Italic,
+    Underlined,
+    Strikethrough,
+    Obfuscated,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum StyleMerge {
+    Color,
+    Font,
+    Bold,
+    Italic,
+    Underlined,
+    Strikethrough,
+    Obfuscated,
+    ShadowColor,
+    Insertion,
+    ClickEvent,
+    HoverEvent,
+}
+
 impl Component {
     pub fn text(text: impl AsRef<str>) -> Self {
         Component::Object(Box::new(ComponentObject {
@@ -226,6 +266,242 @@ impl Component {
             text: Some(text.as_ref().to_string()),
             ..Default::default()
         }))
+    }
+
+    pub fn append<C: Into<Component>>(self, component: C) -> Self {
+        let component = component.into();
+        match self {
+            Component::String(s) => Component::Object(Box::new(ComponentObject {
+                content_type: Some(ContentType::Text),
+                text: Some(s),
+                extra: Some(vec![component]),
+                ..Default::default()
+            })),
+            Component::Array(mut vec) => {
+                vec.push(component);
+                Component::Array(vec)
+            }
+            Component::Object(mut obj) => {
+                if let Some(extras) = &mut obj.extra {
+                    extras.push(component);
+                } else {
+                    obj.extra = Some(vec![component]);
+                }
+                Component::Object(obj)
+            }
+        }
+    }
+
+    pub fn append_newline(self) -> Self {
+        self.append(Component::text("\n"))
+    }
+
+    pub fn append_space(self) -> Self {
+        self.append(Component::text(" "))
+    }
+
+    pub fn apply_fallback_style(self, fallback: &Style) -> Self {
+        match self {
+            Component::String(s) => {
+                let mut obj = ComponentObject {
+                    content_type: Some(ContentType::Text),
+                    text: Some(s),
+                    ..Default::default()
+                };
+                obj.merge_style(fallback);
+                Component::Object(Box::new(obj))
+            }
+            Component::Array(vec) => Component::Array(
+                vec.into_iter()
+                    .map(|c| c.apply_fallback_style(fallback))
+                    .collect(),
+            ),
+            Component::Object(mut obj) => {
+                obj.merge_style(fallback);
+                if let Some(extras) = obj.extra {
+                    obj.extra = Some(
+                        extras
+                            .into_iter()
+                            .map(|c| c.apply_fallback_style(fallback))
+                            .collect(),
+                    );
+                }
+                Component::Object(obj)
+            }
+        }
+    }
+
+    pub fn color(self, color: Option<Color>) -> Self {
+        self.map_object(|mut obj| {
+            obj.color = color;
+            obj
+        })
+    }
+
+    pub fn font(self, font: Option<String>) -> Self {
+        self.map_object(|mut obj| {
+            obj.font = font;
+            obj
+        })
+    }
+
+    pub fn decoration(self, decoration: TextDecoration, state: Option<bool>) -> Self {
+        self.map_object(|mut obj| {
+            match decoration {
+                TextDecoration::Bold => obj.bold = state,
+                TextDecoration::Italic => obj.italic = state,
+                TextDecoration::Underlined => obj.underlined = state,
+                TextDecoration::Strikethrough => obj.strikethrough = state,
+                TextDecoration::Obfuscated => obj.obfuscated = state,
+            }
+            obj
+        })
+    }
+
+    pub fn decorations(self, decorations: &HashMap<TextDecoration, Option<bool>>) -> Self {
+        self.map_object(|mut obj| {
+            for (decoration, state) in decorations {
+                match decoration {
+                    TextDecoration::Bold => obj.bold = *state,
+                    TextDecoration::Italic => obj.italic = *state,
+                    TextDecoration::Underlined => obj.underlined = *state,
+                    TextDecoration::Strikethrough => obj.strikethrough = *state,
+                    TextDecoration::Obfuscated => obj.obfuscated = *state,
+                }
+            }
+            obj
+        })
+    }
+
+    pub fn click_event(self, event: Option<ClickEvent>) -> Self {
+        self.map_object(|mut obj| {
+            obj.click_event = event;
+            obj
+        })
+    }
+
+    pub fn hover_event(self, event: Option<HoverEvent>) -> Self {
+        self.map_object(|mut obj| {
+            obj.hover_event = event;
+            obj
+        })
+    }
+
+    pub fn insertion(self, insertion: Option<String>) -> Self {
+        self.map_object(|mut obj| {
+            obj.insertion = insertion;
+            obj
+        })
+    }
+
+    pub fn has_decoration(&self, decoration: TextDecoration) -> bool {
+        match self {
+            Component::Object(obj) => match decoration {
+                TextDecoration::Bold => obj.bold.unwrap_or(false),
+                TextDecoration::Italic => obj.italic.unwrap_or(false),
+                TextDecoration::Underlined => obj.underlined.unwrap_or(false),
+                TextDecoration::Strikethrough => obj.strikethrough.unwrap_or(false),
+                TextDecoration::Obfuscated => obj.obfuscated.unwrap_or(false),
+            },
+            _ => false,
+        }
+    }
+
+    pub fn has_styling(&self) -> bool {
+        match self {
+            Component::Object(obj) => {
+                obj.color.is_some()
+                    || obj.font.is_some()
+                    || obj.bold.is_some()
+                    || obj.italic.is_some()
+                    || obj.underlined.is_some()
+                    || obj.strikethrough.is_some()
+                    || obj.obfuscated.is_some()
+                    || obj.shadow_color.is_some()
+                    || obj.insertion.is_some()
+                    || obj.click_event.is_some()
+                    || obj.hover_event.is_some()
+            }
+            _ => false,
+        }
+    }
+
+    pub fn set_children(self, children: Vec<Component>) -> Self {
+        self.map_object(|mut obj| {
+            obj.extra = Some(children);
+            obj
+        })
+    }
+
+    pub fn get_children(&self) -> &[Component] {
+        match self {
+            Component::Object(obj) => obj.extra.as_deref().unwrap_or_default(),
+            Component::Array(vec) => vec.as_slice(),
+            Component::String(_) => &[],
+        }
+    }
+
+    fn map_object<F>(self, f: F) -> Self
+    where
+        F: FnOnce(ComponentObject) -> ComponentObject,
+    {
+        match self {
+            Component::String(s) => {
+                let obj = ComponentObject {
+                    content_type: Some(ContentType::Text),
+                    text: Some(s),
+                    ..Default::default()
+                };
+                Component::Object(Box::new(f(obj)))
+            }
+            Component::Array(vec) => {
+                let mut obj = ComponentObject {
+                    extra: Some(vec),
+                    ..Default::default()
+                };
+                obj = f(obj);
+                Component::Object(Box::new(obj))
+            }
+            Component::Object(obj) => Component::Object(Box::new(f(*obj))),
+        }
+    }
+}
+
+impl ComponentObject {
+    fn merge_style(&mut self, fallback: &Style) {
+        if self.color.is_none() {
+            self.color = fallback.color.clone();
+        }
+        if self.font.is_none() {
+            self.font = fallback.font.clone();
+        }
+        if self.bold.is_none() {
+            self.bold = fallback.bold;
+        }
+        if self.italic.is_none() {
+            self.italic = fallback.italic;
+        }
+        if self.underlined.is_none() {
+            self.underlined = fallback.underlined;
+        }
+        if self.strikethrough.is_none() {
+            self.strikethrough = fallback.strikethrough;
+        }
+        if self.obfuscated.is_none() {
+            self.obfuscated = fallback.obfuscated;
+        }
+        if self.shadow_color.is_none() {
+            self.shadow_color = fallback.shadow_color.clone();
+        }
+        if self.insertion.is_none() {
+            self.insertion = fallback.insertion.clone();
+        }
+        if self.click_event.is_none() {
+            self.click_event = fallback.click_event.clone();
+        }
+        if self.hover_event.is_none() {
+            self.hover_event = fallback.hover_event.clone();
+        }
     }
 }
 
