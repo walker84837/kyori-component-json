@@ -1,7 +1,11 @@
+#![warn(missing_docs)]
+#![forbid(unsafe_code)]
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
@@ -11,6 +15,7 @@ pub enum Component {
     Object(Box<ComponentObject>),
 }
 
+#[allow(missing_docs)]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ContentType {
@@ -22,6 +27,7 @@ pub enum ContentType {
     Nbt,
 }
 
+#[allow(missing_docs)]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum NamedColor {
@@ -536,6 +542,45 @@ impl Default for ComponentObject {
             click_event: None,
             hover_event: None,
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ParseColorError;
+
+impl std::fmt::Display for ParseColorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "invalid color")
+    }
+}
+
+impl std::error::Error for ParseColorError {}
+
+fn parse_hex_color(s: &str) -> Option<[u8; 3]> {
+    let s = s.strip_prefix('#')?;
+    if s.len() == 6 {
+        let r = u8::from_str_radix(&s[0..2], 16).ok()?;
+        let g = u8::from_str_radix(&s[2..4], 16).ok()?;
+        let b = u8::from_str_radix(&s[4..6], 16).ok()?;
+        return Some([r, g, b]);
+    }
+    None
+}
+
+impl FromStr for Color {
+    type Err = ParseColorError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let None = parse_hex_color(s) {
+            return Err(ParseColorError);
+        }
+        Ok(Color::Hex(s.to_string()))
+    }
+}
+
+impl<T: AsRef<str>> From<T> for Component {
+    fn from(value: T) -> Component {
+        let s: &str = value.as_ref();
+        Component::String(s.to_string())
     }
 }
 
