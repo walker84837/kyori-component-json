@@ -3,15 +3,17 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
-use std::fmt;
-use std::str::FromStr;
+use std::{collections::HashMap, fmt, str::FromStr};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
+/// A Component is an immutable object that represents how text is displayed Minecraft clients.
 pub enum Component {
+    /// Simple text
     String(String),
+    /// A list of Components
     Array(Vec<Component>),
+    /// A single Component object
     Object(Box<ComponentObject>),
 }
 
@@ -27,9 +29,10 @@ pub enum ContentType {
     Nbt,
 }
 
-#[allow(missing_docs)]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
+/// The named text colours in Minecraft: Java Edition.
+#[allow(missing_docs)]
 pub enum NamedColor {
     Black,
     DarkBlue,
@@ -90,6 +93,7 @@ pub enum ShadowColor {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case", tag = "action")]
+/// What happens when you click on text which has a click event
 pub enum ClickEvent {
     OpenUrl { url: String },
     OpenFile { path: String },
@@ -101,6 +105,7 @@ pub enum ClickEvent {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
+/// Possible UUID representations from a Component
 pub enum UuidRepr {
     String(String),
     IntArray([i32; 4]),
@@ -108,6 +113,7 @@ pub enum UuidRepr {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case", tag = "action")]
+/// What is shown when hovering text that has a HoverEvent
 pub enum HoverEvent {
     ShowText {
         value: Component,
@@ -141,8 +147,9 @@ pub enum NbtSource {
     Storage,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
+/// Actual contents of a [`Component`]
 pub struct ComponentObject {
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub content_type: Option<ContentType>,
@@ -511,41 +518,8 @@ impl ComponentObject {
     }
 }
 
-impl Default for ComponentObject {
-    fn default() -> Self {
-        Self {
-            content_type: None,
-            text: None,
-            translate: None,
-            fallback: None,
-            with: None,
-            score: None,
-            selector: None,
-            separator: None,
-            keybind: None,
-            nbt: None,
-            source: None,
-            interpret: None,
-            block: None,
-            entity: None,
-            storage: None,
-            extra: None,
-            color: None,
-            font: None,
-            bold: None,
-            italic: None,
-            underlined: None,
-            strikethrough: None,
-            obfuscated: None,
-            shadow_color: None,
-            insertion: None,
-            click_event: None,
-            hover_event: None,
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
+/// An error with parsing an hex color
 pub struct ParseColorError;
 
 impl std::fmt::Display for ParseColorError {
