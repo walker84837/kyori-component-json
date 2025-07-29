@@ -19,7 +19,7 @@ But it also empowers you to:
 - Add clickable text that runs commands when clicked
 - Make hover text that shows extra information
 
-### When Would You Use This?
+### When would you use this?
 
 1. **Command Generators**: Create `/tellraw` or `/title` commands programmatically
 2. **Custom UIs**: Make interactive books or signs
