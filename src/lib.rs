@@ -190,7 +190,7 @@ impl<'de> Deserialize<'de> for Color {
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        if let Ok(named) = serde_json::from_str::<NamedColor>(&format!("\"{}\"", s)) {
+        if let Ok(named) = serde_json::from_str::<NamedColor>(&format!("\"{s}\"")) {
             Ok(Color::Named(named))
         } else {
             Ok(Color::Hex(s))
@@ -722,7 +722,7 @@ impl ComponentObject {
             self.obfuscated = fallback.obfuscated;
         }
         if self.shadow_color.is_none() {
-            self.shadow_color = fallback.shadow_color.clone();
+            self.shadow_color = fallback.shadow_color;
         }
         if self.insertion.is_none() {
             self.insertion = fallback.insertion.clone();
@@ -796,7 +796,7 @@ impl fmt::Display for NamedColor {
             NamedColor::Yellow => "yellow",
             NamedColor::White => "white",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
