@@ -1,60 +1,174 @@
+//! # kyori-component-json
+//!
+//! A library for serialising and deserialising Minecraft's JSON component format, also known as
+//! 'raw JSON text'. Minecraft uses this format to display rich text throughout the game, including in
+//! commands such as /tellraw and in elements such as books, signs, scoreboards and entity names.
+//!
+//! ## Features
+//! - Full support for Minecraft's component specification (as of Java Edition 1.21.5+)
+//! - Serialization and deserialization using Serde
+//! - Builder-style API for constructing components
+//! - Style inheritance and component nesting
+//! - Comprehensive type safety for all component elements
+//!
+//! ## When to Use
+//! This library is useful when:
+//! - Generating complex chat messages with formatting and interactivity
+//! - Creating custom books or signs with rich text
+//! - Building command generators that use `/tellraw` or `/title`
+//! - Processing component data from Minecraft APIs or data packs
+//!
+//! ## Getting Started
+//! Add to your `Cargo.toml`:
+//! ```toml
+//! [dependencies]
+//! kyori-component-json = "0.1"
+//! serde-json = "1.0"
+//! ```
+//!
+//! ## Basic Example
+//! ```
+//! use kyori_component_json::*;
+//! use serde_json::json;
+//!
+//! // Create a formatted chat message
+//! let message = Component::text("Hello ")
+//!     .color(Some(Color::Named(NamedColor::Yellow)))
+//!     .append(
+//!         Component::text("World!")
+//!             .color(Some(Color::Named(NamedColor::White)))
+//!             .decoration(TextDecoration::Bold, Some(true))
+//!     )
+//!     .append_newline()
+//!     .append(
+//!         Component::text("Click here")
+//!             .click_event(Some(ClickEvent::RunCommand {
+//!                 command: "/say I was clicked!".into()
+//!             }))
+//!             .hover_event(Some(HoverEvent::ShowText {
+//!                 value: Component::text("Run a command!")
+//!             }))
+//!     );
+//!
+//! // Serialize to JSON
+//! let json = serde_json::to_value(&message).unwrap();
+//! assert_eq!(json, json!({
+//!     "text": "Hello ",
+//!     "color": "yellow",
+//!     "extra": [
+//!         {
+//!             "text": "World!",
+//!             "color": "white",
+//!             "bold": true
+//!         },
+//!         {"text": "\n"},
+//!         {
+//!             "text": "Click here",
+//!             "click_event": {
+//!                 "action": "run_command",
+//!                 "command": "/say I was clicked!"
+//!             },
+//!             "hover_event": {
+//!                 "action": "show_text",
+//!                 "value": {"text": "Run a command!"}
+//!             }
+//!         }
+//!     ]
+//! }));
+//! ```
+//!
+//! ## Key Concepts
+//! 1. **Components** - The building blocks of Minecraft text:
+//!    - `String`: Plain text shorthand
+//!    - `Array`: List of components
+//!    - `Object`: Full component with properties
+//! 2. **Content Types** - Special content like translations or scores
+//! 3. **Formatting** - Colors, styles, and fonts
+//! 4. **Interactivity** - Click and hover events
+//!
+//! See [Minecraft Wiki](https://minecraft.wiki/w/Text_component_format) for full specification.
 #![warn(missing_docs)]
+#![warn(clippy::perf)]
 #![forbid(unsafe_code)]
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fmt, str::FromStr};
 
+/// Represents a Minecraft text component
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
-/// A Component is an immutable object that represents how text is displayed Minecraft clients.
 pub enum Component {
-    /// Simple text
+    /// Simple string component (shorthand for `{text: "value"}`)
     String(String),
-    /// A list of Components
+    /// Array of components (shorthand for first component with extras)
     Array(Vec<Component>),
-    /// A single Component object
+    /// Full component object with properties
     Object(Box<ComponentObject>),
 }
 
-#[allow(missing_docs)]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Content type of a component object
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum ContentType {
+    /// Plain text content
     Text,
+    /// Localized translation text
     Translatable,
+    /// Scoreboard value
     Score,
+    /// Entity selector
     Selector,
+    /// Key binding display
     Keybind,
+    /// NBT data display
     Nbt,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Named text colors from Minecraft
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
-/// The named text colours in Minecraft: Java Edition.
-#[allow(missing_docs)]
 pub enum NamedColor {
+    /// #000000
     Black,
+    /// #0000AA
     DarkBlue,
+    /// #00AA00
     DarkGreen,
+    /// #00AAAA
     DarkAqua,
+    /// #AA0000
     DarkRed,
+    /// #AA00AA
     DarkPurple,
+    /// #FFAA00
     Gold,
+    /// #AAAAAA
     Gray,
+    /// #555555
     DarkGray,
+    /// #5555FF
     Blue,
+    /// #55FF55
     Green,
+    /// #55FFFF
     Aqua,
+    /// #FF5555
     Red,
+    /// #FF55FF
     LightPurple,
+    /// #FFFF55
     Yellow,
+    /// #FFFFFF
     White,
 }
 
+/// Text color representation (either named or hex)
 #[derive(Debug, Clone)]
 pub enum Color {
+    /// Predefined Minecraft color name
     Named(NamedColor),
+    /// Hex color code in #RRGGBB format
     Hex(String),
 }
 
@@ -84,195 +198,282 @@ impl<'de> Deserialize<'de> for Color {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Shadow color representation (integer or float array)
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[serde(untagged)]
 pub enum ShadowColor {
+    /// RGBA packed as 32-bit integer (0xRRGGBBAA)
     Int(i32),
+    /// RGBA as [0.0-1.0] float values
     Floats([f32; 4]),
 }
 
+/// Actions triggered when clicking text
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case", tag = "action")]
-/// What happens when you click on text which has a click event
+#[allow(missing_docs)]
 pub enum ClickEvent {
+    /// Open URL in browser
     OpenUrl { url: String },
+    /// Open file (client-side only)
     OpenFile { path: String },
+    /// Execute command
     RunCommand { command: String },
+    /// Suggest command in chat
     SuggestCommand { command: String },
+    /// Change page in books
     ChangePage { page: i32 },
+    /// Copy text to clipboard
     CopyToClipboard { value: String },
 }
 
+/// UUID representation for entity hover events
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
-/// Possible UUID representations from a Component
 pub enum UuidRepr {
+    /// String representation (hyphenated hex format)
     String(String),
+    /// Integer array representation
     IntArray([i32; 4]),
 }
 
+/// Information shown when hovering over text
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case", tag = "action")]
-/// What is shown when hovering text that has a HoverEvent
 pub enum HoverEvent {
+    /// Show text component
     ShowText {
+        /// Text to display
         value: Component,
     },
+    /// Show item tooltip
     ShowItem {
+        /// Item ID (e.g., "minecraft:diamond_sword")
         id: String,
+        /// Stack count
         #[serde(skip_serializing_if = "Option::is_none")]
         count: Option<i32>,
+        /// Additional item components
         #[serde(skip_serializing_if = "Option::is_none")]
         components: Option<Value>,
     },
+    /// Show entity information
     ShowEntity {
+        /// Custom name override
         #[serde(skip_serializing_if = "Option::is_none")]
         name: Option<Component>,
+        /// Entity type ID
         id: String,
+        /// Entity UUID
         uuid: UuidRepr,
     },
 }
 
+/// Scoreboard value content
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ScoreContent {
+    /// Score holder (player name or selector)
     pub name: String,
+    /// Objective name
     pub objective: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Source for NBT data
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum NbtSource {
+    /// Block entity data
     Block,
+    /// Entity data
     Entity,
+    /// Command storage
     Storage,
 }
 
+/// Core component structure containing all properties
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-/// Actual contents of a [`Component`]
 pub struct ComponentObject {
+    /// Content type specification
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub content_type: Option<ContentType>,
 
+    /// Plain text content
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
 
+    /// Translation key
     #[serde(skip_serializing_if = "Option::is_none")]
     pub translate: Option<String>,
 
+    /// Fallback text for missing translations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fallback: Option<String>,
 
+    /// Arguments for translations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub with: Option<Vec<Component>>,
 
+    /// Scoreboard value
     #[serde(skip_serializing_if = "Option::is_none")]
     pub score: Option<ScoreContent>,
 
+    /// Entity selector
     #[serde(skip_serializing_if = "Option::is_none")]
     pub selector: Option<String>,
 
+    /// Custom separator for multi-value components
     #[serde(skip_serializing_if = "Option::is_none")]
     pub separator: Option<Box<Component>>,
 
+    /// Key binding name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub keybind: Option<String>,
 
+    /// NBT path query
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nbt: Option<String>,
 
+    /// NBT source type
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source: Option<NbtSource>,
 
+    /// Whether to interpret NBT as components
     #[serde(skip_serializing_if = "Option::is_none")]
     pub interpret: Option<bool>,
 
+    /// Block coordinates for NBT source
     #[serde(skip_serializing_if = "Option::is_none")]
     pub block: Option<String>,
 
+    /// Entity selector for NBT source
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entity: Option<String>,
 
+    /// Storage ID for NBT source
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage: Option<String>,
 
+    /// Child components
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extra: Option<Vec<Component>>,
 
+    /// Text color
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<Color>,
 
+    /// Font resource location
     #[serde(skip_serializing_if = "Option::is_none")]
     pub font: Option<String>,
 
+    /// Bold formatting
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bold: Option<bool>,
 
+    /// Italic formatting
     #[serde(skip_serializing_if = "Option::is_none")]
     pub italic: Option<bool>,
 
+    /// Underline formatting
     #[serde(skip_serializing_if = "Option::is_none")]
     pub underlined: Option<bool>,
 
+    /// Strikethrough formatting
     #[serde(skip_serializing_if = "Option::is_none")]
     pub strikethrough: Option<bool>,
 
+    /// Obfuscated text
     #[serde(skip_serializing_if = "Option::is_none")]
     pub obfuscated: Option<bool>,
 
+    /// Text shadow color
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shadow_color: Option<ShadowColor>,
 
+    /// Text insertion on shift-click
     #[serde(skip_serializing_if = "Option::is_none")]
     pub insertion: Option<String>,
 
+    /// Click action
     #[serde(skip_serializing_if = "Option::is_none")]
     pub click_event: Option<ClickEvent>,
 
+    /// Hover action
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hover_event: Option<HoverEvent>,
 }
 
+/// Style properties for components
 #[derive(Debug, Clone, Default)]
 pub struct Style {
+    /// Text color
     pub color: Option<Color>,
+    /// Font resource location
     pub font: Option<String>,
+    /// Bold formatting
     pub bold: Option<bool>,
+    /// Italic formatting
     pub italic: Option<bool>,
+    /// Underline formatting
     pub underlined: Option<bool>,
+    /// Strikethrough formatting
     pub strikethrough: Option<bool>,
+    /// Obfuscated text
     pub obfuscated: Option<bool>,
+    /// Text shadow color
     pub shadow_color: Option<ShadowColor>,
+    /// Text insertion on shift-click
     pub insertion: Option<String>,
+    /// Click action
     pub click_event: Option<ClickEvent>,
+    /// Hover action
     pub hover_event: Option<HoverEvent>,
 }
 
+/// Text decoration styles
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TextDecoration {
+    /// Bold text
     Bold,
+    /// Italic text
     Italic,
+    /// Underlined text
     Underlined,
+    /// Strikethrough text
     Strikethrough,
+    /// Obfuscated (scrambled) text
     Obfuscated,
 }
 
+/// Style properties for merging (unused in current implementation)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StyleMerge {
+    /// Color property
     Color,
+    /// Font property
     Font,
+    /// Bold property
     Bold,
+    /// Italic property
     Italic,
+    /// Underline property
     Underlined,
+    /// Strikethrough property
     Strikethrough,
+    /// Obfuscated property
     Obfuscated,
+    /// Shadow color property
     ShadowColor,
+    /// Insertion property
     Insertion,
+    /// Click event property
     ClickEvent,
+    /// Hover event property
     HoverEvent,
 }
 
 impl Component {
+    /// Creates a plain text component
     pub fn text(text: impl AsRef<str>) -> Self {
         Component::Object(Box::new(ComponentObject {
             content_type: Some(ContentType::Text),
@@ -281,6 +482,7 @@ impl Component {
         }))
     }
 
+    /// Appends a child component
     pub fn append<C: Into<Component>>(self, component: C) -> Self {
         let component = component.into();
         match self {
@@ -305,14 +507,17 @@ impl Component {
         }
     }
 
+    /// Appends a newline character
     pub fn append_newline(self) -> Self {
         self.append(Component::text("\n"))
     }
 
+    /// Appends a space character
     pub fn append_space(self) -> Self {
         self.append(Component::text(" "))
     }
 
+    /// Applies fallback styles to unset properties
     pub fn apply_fallback_style(self, fallback: &Style) -> Self {
         match self {
             Component::String(s) => {
@@ -344,6 +549,7 @@ impl Component {
         }
     }
 
+    /// Sets text color
     pub fn color(self, color: Option<Color>) -> Self {
         self.map_object(|mut obj| {
             obj.color = color;
@@ -351,6 +557,7 @@ impl Component {
         })
     }
 
+    /// Sets font
     pub fn font(self, font: Option<String>) -> Self {
         self.map_object(|mut obj| {
             obj.font = font;
@@ -358,6 +565,7 @@ impl Component {
         })
     }
 
+    /// Sets text decoration state
     pub fn decoration(self, decoration: TextDecoration, state: Option<bool>) -> Self {
         self.map_object(|mut obj| {
             match decoration {
@@ -371,6 +579,7 @@ impl Component {
         })
     }
 
+    /// Sets multiple decorations at once
     pub fn decorations(self, decorations: &HashMap<TextDecoration, Option<bool>>) -> Self {
         self.map_object(|mut obj| {
             for (decoration, state) in decorations {
@@ -386,6 +595,7 @@ impl Component {
         })
     }
 
+    /// Sets click event
     pub fn click_event(self, event: Option<ClickEvent>) -> Self {
         self.map_object(|mut obj| {
             obj.click_event = event;
@@ -393,6 +603,7 @@ impl Component {
         })
     }
 
+    /// Sets hover event
     pub fn hover_event(self, event: Option<HoverEvent>) -> Self {
         self.map_object(|mut obj| {
             obj.hover_event = event;
@@ -400,6 +611,7 @@ impl Component {
         })
     }
 
+    /// Sets insertion text
     pub fn insertion(self, insertion: Option<String>) -> Self {
         self.map_object(|mut obj| {
             obj.insertion = insertion;
@@ -407,6 +619,7 @@ impl Component {
         })
     }
 
+    /// Checks if a decoration is enabled
     pub fn has_decoration(&self, decoration: TextDecoration) -> bool {
         match self {
             Component::Object(obj) => match decoration {
@@ -420,6 +633,7 @@ impl Component {
         }
     }
 
+    /// Checks if any styling is present
     pub fn has_styling(&self) -> bool {
         match self {
             Component::Object(obj) => {
@@ -439,6 +653,7 @@ impl Component {
         }
     }
 
+    /// Sets child components
     pub fn set_children(self, children: Vec<Component>) -> Self {
         self.map_object(|mut obj| {
             obj.extra = Some(children);
@@ -446,6 +661,7 @@ impl Component {
         })
     }
 
+    /// Gets child components
     pub fn get_children(&self) -> &[Component] {
         match self {
             Component::Object(obj) => obj.extra.as_deref().unwrap_or_default(),
@@ -454,6 +670,7 @@ impl Component {
         }
     }
 
+    /// Internal method to apply transformations to component objects
     fn map_object<F>(self, f: F) -> Self
     where
         F: FnOnce(ComponentObject) -> ComponentObject,
@@ -481,6 +698,7 @@ impl Component {
 }
 
 impl ComponentObject {
+    /// Merges style properties from a fallback style
     fn merge_style(&mut self, fallback: &Style) {
         if self.color.is_none() {
             self.color = fallback.color.clone();
@@ -518,13 +736,13 @@ impl ComponentObject {
     }
 }
 
-#[derive(Debug, Clone)]
-/// An error with parsing an hex color
+/// Error type for color parsing
+#[derive(Debug, Clone, Copy)]
 pub struct ParseColorError;
 
 impl std::fmt::Display for ParseColorError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "invalid color")
+        write!(f, "invalid color format")
     }
 }
 
@@ -544,7 +762,7 @@ fn parse_hex_color(s: &str) -> Option<[u8; 3]> {
 impl FromStr for Color {
     type Err = ParseColorError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let None = parse_hex_color(s) {
+        if parse_hex_color(s).is_none() {
             return Err(ParseColorError);
         }
         Ok(Color::Hex(s.to_string()))
