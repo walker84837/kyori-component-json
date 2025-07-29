@@ -476,7 +476,6 @@ impl Component {
     /// Creates a plain text component
     pub fn text(text: impl AsRef<str>) -> Self {
         Component::Object(Box::new(ComponentObject {
-            content_type: Some(ContentType::Text),
             text: Some(text.as_ref().to_string()),
             ..Default::default()
         }))
