@@ -90,12 +90,14 @@
 #![warn(missing_docs)]
 #![warn(clippy::perf)]
 #![forbid(unsafe_code)]
+pub mod minimessage;
+pub mod parsing;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fmt, str::FromStr};
 
-/// Represents a Minecraft text component
+/// Represents a Minecraft text component. Allows de/serialization using Serde with JSON.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum Component {
@@ -126,7 +128,7 @@ pub enum ContentType {
 }
 
 /// Named text colors from Minecraft
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum NamedColor {
     /// #000000
@@ -163,8 +165,33 @@ pub enum NamedColor {
     White,
 }
 
+impl FromStr for NamedColor {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "black" => Ok(NamedColor::Black),
+            "dark_blue" => Ok(NamedColor::DarkBlue),
+            "dark_green" => Ok(NamedColor::DarkGreen),
+            "dark_aqua" => Ok(NamedColor::DarkAqua),
+            "dark_red" => Ok(NamedColor::DarkRed),
+            "dark_purple" => Ok(NamedColor::DarkPurple),
+            "gold" => Ok(NamedColor::Gold),
+            "gray" => Ok(NamedColor::Gray),
+            "dark_gray" => Ok(NamedColor::DarkGray),
+            "blue" => Ok(NamedColor::Blue),
+            "green" => Ok(NamedColor::Green),
+            "aqua" => Ok(NamedColor::Aqua),
+            "red" => Ok(NamedColor::Red),
+            "light_purple" => Ok(NamedColor::LightPurple),
+            "yellow" => Ok(NamedColor::Yellow),
+            "white" => Ok(NamedColor::White),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Text color representation (either named or hex)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Color {
     /// Predefined Minecraft color name
     Named(NamedColor),
