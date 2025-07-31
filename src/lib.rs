@@ -89,16 +89,20 @@
 //! See [Minecraft Wiki](https://minecraft.wiki/w/Text_component_format) for full specification.
 #![warn(missing_docs)]
 #![warn(clippy::perf)]
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+#![forbid(missing_copy_implementations, missing_debug_implementations)]
 #![forbid(unsafe_code)]
+
 pub mod minimessage;
 pub mod parsing;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::borrow::Cow;
 use std::{collections::HashMap, fmt, str::FromStr};
 
 /// Represents a Minecraft text component. Allows de/serialization using Serde with JSON.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Component {
     /// Simple string component (shorthand for `{text: "value"}`)
@@ -110,7 +114,7 @@ pub enum Component {
 }
 
 /// Content type of a component object
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ContentType {
     /// Plain text content
@@ -128,7 +132,7 @@ pub enum ContentType {
 }
 
 /// Named text colors from Minecraft
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum NamedColor {
     /// #000000
@@ -191,7 +195,7 @@ impl FromStr for NamedColor {
 }
 
 /// Text color representation (either named or hex)
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Color {
     /// Predefined Minecraft color name
     Named(NamedColor),
@@ -226,7 +230,7 @@ impl<'de> Deserialize<'de> for Color {
 }
 
 /// Shadow color representation (integer or float array)
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ShadowColor {
     /// RGBA packed as 32-bit integer (0xRRGGBBAA)
@@ -236,7 +240,7 @@ pub enum ShadowColor {
 }
 
 /// Actions triggered when clicking text
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "action")]
 #[allow(missing_docs)]
 pub enum ClickEvent {
@@ -255,7 +259,7 @@ pub enum ClickEvent {
 }
 
 /// UUID representation for entity hover events
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum UuidRepr {
     /// String representation (hyphenated hex format)
@@ -265,7 +269,7 @@ pub enum UuidRepr {
 }
 
 /// Information shown when hovering over text
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "action")]
 pub enum HoverEvent {
     /// Show text component
@@ -297,7 +301,7 @@ pub enum HoverEvent {
 }
 
 /// Scoreboard value content
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ScoreContent {
     /// Score holder (player name or selector)
     pub name: String,
@@ -306,7 +310,7 @@ pub struct ScoreContent {
 }
 
 /// Source for NBT data
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum NbtSource {
     /// Block entity data
@@ -318,7 +322,7 @@ pub enum NbtSource {
 }
 
 /// Core component structure containing all properties
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ComponentObject {
     /// Content type specification
@@ -431,7 +435,7 @@ pub struct ComponentObject {
 }
 
 /// Style properties for components
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Style {
     /// Text color
     pub color: Option<Color>,
@@ -541,6 +545,15 @@ impl Component {
     /// Appends a space character
     pub fn append_space(self) -> Self {
         self.append(Component::text(" "))
+    }
+
+    /// Gets plain text from component, if it is a string
+    pub fn get_plain_text(&self) -> Option<Cow<'_, str>> {
+        match self {
+            Component::String(s) => Some(Cow::Borrowed(s)),
+            Component::Object(obj) => obj.text.as_deref().map(Cow::Borrowed),
+            _ => None,
+        }
     }
 
     /// Applies fallback styles to unset properties
@@ -763,7 +776,7 @@ impl ComponentObject {
 }
 
 /// Error type for color parsing
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ParseColorError;
 
 impl std::fmt::Display for ParseColorError {
