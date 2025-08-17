@@ -36,6 +36,10 @@ pub trait ComponentParser {
     ///
     /// Returns a `Result` containing a parsed [`Component`] on success,
     /// or an error of type [`Self::Err`] on failure.
+    ///
+    /// # Errors
+    ///
+    /// - [`Self::Err`]: An error indicating that the input string could not be parsed into a [`Component`].
     fn from_string(input: impl AsRef<str>) -> Result<Component, Self::Err>;
 }
 
@@ -54,5 +58,9 @@ pub trait ComponentSerializer {
     ///
     /// Returns a `Result` containing the serialized string on success,
     /// or an error of type [`Self::Err`] on failure.
+    ///
+    /// # Errors
+    ///
+    /// - [`Self::Err`]: An error indicating that the [`Component`] could not be serialized into a string.
     fn to_string(component: &Component) -> Result<String, Self::Err>;
 }

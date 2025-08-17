@@ -220,13 +220,13 @@ impl fmt::Display for Color {
 
 impl From<(u8, u8, u8)> for Color {
     fn from((r, g, b): (u8, u8, u8)) -> Self {
-        Color::Hex(format!("#{:02X}{:02X}{:02X}", r, g, b))
+        Color::Hex(format!("#{r:02X}{g:02X}{b:02X}"))
     }
 }
 
 impl From<[u8; 3]> for Color {
     fn from([r, g, b]: [u8; 3]) -> Self {
-        Color::Hex(format!("#{:02X}{:02X}{:02X}", r, g, b))
+        Color::Hex(format!("#{r:02X}{g:02X}{b:02X}"))
     }
 }
 
@@ -306,7 +306,7 @@ pub enum HoverEvent {
     },
     /// Show item tooltip
     ShowItem {
-        /// Item ID (e.g., "minecraft:diamond_sword")
+        /// Item ID (e.g., "`minecraft:diamond_sword`")
         id: String,
         /// Stack count
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -532,6 +532,7 @@ pub enum StyleMerge {
 
 impl Component {
     /// Creates a plain text component
+    #[must_use]
     pub fn text(text: impl AsRef<str>) -> Self {
         Component::Object(Box::new(ComponentObject {
             text: Some(text.as_ref().to_string()),
@@ -540,6 +541,7 @@ impl Component {
     }
 
     /// Appends a child component
+    #[must_use]
     pub fn append<C: Into<Component>>(self, component: C) -> Self {
         let component = component.into();
         match self {
@@ -565,11 +567,13 @@ impl Component {
     }
 
     /// Appends a newline character
+    #[must_use]
     pub fn append_newline(self) -> Self {
         self.append(Component::text("\n"))
     }
 
     /// Appends a space character
+    #[must_use]
     pub fn append_space(self) -> Self {
         self.append(Component::text(" "))
     }
@@ -590,7 +594,7 @@ impl Component {
     ///
     /// # Notes
     ///
-    /// This method may allocate a new `String` if concatenation is needed.  
+    /// This method may allocate a new `String` if concatenation is needed.\
     /// Use [`Self::get_plain_text`] if you only need a cheap, O(1) borrowed string from a single component.
     pub fn to_plain_text(&self) -> Cow<'_, str> {
         match self {
@@ -630,11 +634,12 @@ impl Component {
         match self {
             Component::String(s) => Some(s),
             Component::Object(obj) => obj.text.as_deref(),
-            _ => None,
+            Component::Array(_) => None,
         }
     }
 
     /// Applies fallback styles to unset properties
+    #[must_use]
     pub fn apply_fallback_style(self, fallback: &Style) -> Self {
         match self {
             Component::String(s) => {
@@ -667,6 +672,7 @@ impl Component {
     }
 
     /// Sets text color
+    #[must_use]
     pub fn color(self, color: Option<Color>) -> Self {
         self.map_object(|mut obj| {
             obj.color = color;
@@ -675,6 +681,7 @@ impl Component {
     }
 
     /// Sets font
+    #[must_use]
     pub fn font(self, font: Option<String>) -> Self {
         self.map_object(|mut obj| {
             obj.font = font;
@@ -683,6 +690,7 @@ impl Component {
     }
 
     /// Sets text decoration state
+    #[must_use]
     pub fn decoration(self, decoration: TextDecoration, state: Option<bool>) -> Self {
         self.map_object(|mut obj| {
             match decoration {
@@ -697,6 +705,7 @@ impl Component {
     }
 
     /// Sets multiple decorations at once
+    #[must_use]
     pub fn decorations(self, decorations: &HashMap<TextDecoration, Option<bool>>) -> Self {
         self.map_object(|mut obj| {
             for (decoration, state) in decorations {
@@ -713,6 +722,7 @@ impl Component {
     }
 
     /// Sets click event
+    #[must_use]
     pub fn click_event(self, event: Option<ClickEvent>) -> Self {
         self.map_object(|mut obj| {
             obj.click_event = event;
@@ -721,6 +731,7 @@ impl Component {
     }
 
     /// Sets hover event
+    #[must_use]
     pub fn hover_event(self, event: Option<HoverEvent>) -> Self {
         self.map_object(|mut obj| {
             obj.hover_event = event;
@@ -729,6 +740,7 @@ impl Component {
     }
 
     /// Sets insertion text
+    #[must_use]
     pub fn insertion(self, insertion: Option<String>) -> Self {
         self.map_object(|mut obj| {
             obj.insertion = insertion;
@@ -771,6 +783,7 @@ impl Component {
     }
 
     /// Sets child components
+    #[must_use]
     pub fn set_children(self, children: Vec<Component>) -> Self {
         self.map_object(|mut obj| {
             obj.extra = Some(children);
@@ -788,6 +801,7 @@ impl Component {
     }
 
     /// Internal method to apply transformations to component objects
+    #[must_use]
     fn map_object<F>(self, f: F) -> Self
     where
         F: FnOnce(ComponentObject) -> ComponentObject,
@@ -818,13 +832,13 @@ impl ComponentObject {
     /// Merges style properties from a fallback style
     fn merge_style(&mut self, fallback: &Style) {
         if self.color.is_none() {
-            self.color = fallback.color.clone();
+            self.color.clone_from(&fallback.color);
         }
         if self.font.is_none() {
-            self.font = fallback.font.clone();
+            self.font.clone_from(&fallback.font);
         }
         if self.bold.is_none() {
-            self.bold = fallback.bold;
+            self.bold.clone_from(&fallback.bold);
         }
         if self.italic.is_none() {
             self.italic = fallback.italic;
@@ -842,13 +856,13 @@ impl ComponentObject {
             self.shadow_color = fallback.shadow_color;
         }
         if self.insertion.is_none() {
-            self.insertion = fallback.insertion.clone();
+            self.insertion.clone_from(&fallback.insertion);
         }
         if self.click_event.is_none() {
-            self.click_event = fallback.click_event.clone();
+            self.click_event.clone_from(&fallback.click_event);
         }
         if self.hover_event.is_none() {
-            self.hover_event = fallback.hover_event.clone();
+            self.hover_event.clone_from(&fallback.hover_event);
         }
     }
 }
@@ -875,8 +889,6 @@ fn parse_hex_color(s: &str) -> Option<[u8; 3]> {
     }
     None
 }
-
-
 
 impl FromStr for Color {
     type Err = ParseColorError;
