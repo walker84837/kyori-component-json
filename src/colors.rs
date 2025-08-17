@@ -1,0 +1,38 @@
+use crate::NamedColor;
+
+pub static HEX_CODE_TO_NAMED_COLOR: &[(&str, NamedColor)] = &[
+    ("#000000", NamedColor::Black),
+    ("#0000AA", NamedColor::DarkBlue),
+    ("#00AA00", NamedColor::DarkGreen),
+    ("#00AAAA", NamedColor::DarkAqua),
+    ("#AA0000", NamedColor::DarkRed),
+    ("#AA00AA", NamedColor::DarkPurple),
+    ("#FFAA00", NamedColor::Gold),
+    ("#AAAAAA", NamedColor::Gray),
+    ("#555555", NamedColor::DarkGray),
+    ("#5555FF", NamedColor::Blue),
+    ("#55FF55", NamedColor::Green),
+    ("#55FFFF", NamedColor::Aqua),
+    ("#FF5555", NamedColor::Red),
+    ("#FF55FF", NamedColor::LightPurple),
+    ("#FFFF55", NamedColor::Yellow),
+    ("#FFFFFF", NamedColor::White),
+];
+pub static NAME_TO_NAMED_COLOR: &[(&str, NamedColor)] = &[
+    ("black", NamedColor::Black),
+    ("dark_blue", NamedColor::DarkBlue),
+    ("dark_green", NamedColor::DarkGreen),
+    ("dark_aqua", NamedColor::DarkAqua),
+    ("dark_red", NamedColor::DarkRed),
+    ("dark_purple", NamedColor::DarkPurple),
+    ("gold", NamedColor::Gold),
+    ("gray", NamedColor::Gray),
+    ("dark_gray", NamedColor::DarkGray),
+    ("blue", NamedColor::Blue),
+    ("green", NamedColor::Green),
+    ("aqua", NamedColor::Aqua),
+    ("red", NamedColor::Red),
+    ("light_purple", NamedColor::LightPurple),
+    ("yellow", NamedColor::Yellow),
+    ("white", NamedColor::White),
+];

@@ -93,6 +93,7 @@
 #![forbid(missing_copy_implementations, missing_debug_implementations)]
 #![forbid(unsafe_code)]
 
+mod colors;
 pub mod minimessage;
 pub mod parsing;
 
@@ -172,25 +173,14 @@ pub enum NamedColor {
 impl FromStr for NamedColor {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "black" => Ok(NamedColor::Black),
-            "dark_blue" => Ok(NamedColor::DarkBlue),
-            "dark_green" => Ok(NamedColor::DarkGreen),
-            "dark_aqua" => Ok(NamedColor::DarkAqua),
-            "dark_red" => Ok(NamedColor::DarkRed),
-            "dark_purple" => Ok(NamedColor::DarkPurple),
-            "gold" => Ok(NamedColor::Gold),
-            "gray" => Ok(NamedColor::Gray),
-            "dark_gray" => Ok(NamedColor::DarkGray),
-            "blue" => Ok(NamedColor::Blue),
-            "green" => Ok(NamedColor::Green),
-            "aqua" => Ok(NamedColor::Aqua),
-            "red" => Ok(NamedColor::Red),
-            "light_purple" => Ok(NamedColor::LightPurple),
-            "yellow" => Ok(NamedColor::Yellow),
-            "white" => Ok(NamedColor::White),
-            _ => Err(()),
-        }
+        colors::NAME_TO_NAMED_COLOR
+            .iter()
+            // look for case-insensitive match by name
+            .find(|(name, _)| name.eq_ignore_ascii_case(s))
+            // and return the color
+            .map(|(_, color)| *color)
+            // if not found, return error
+            .ok_or(())
     }
 }
 
@@ -201,6 +191,41 @@ pub enum Color {
     Named(NamedColor),
     /// Hex color code in #RRGGBB format
     Hex(String),
+}
+
+impl Color {
+    /// Gets the named color for a given `Color`.
+    /// If the color is not a named color, it will try to find a matching named color for a hex color.
+    pub fn to_named(&self) -> Option<NamedColor> {
+        match self {
+            Color::Named(named) => Some(*named),
+            Color::Hex(hex) => colors::HEX_CODE_TO_NAMED_COLOR
+                .iter()
+                .find(|(h, _)| h == &hex.as_str())
+                .map(|(_, n)| *n),
+        }
+    }
+}
+
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Color::Named(named) => named.fmt(f),
+            Color::Hex(hex) => hex.fmt(f),
+        }
+    }
+}
+
+impl From<(u8, u8, u8)> for Color {
+    fn from((r, g, b): (u8, u8, u8)) -> Self {
+        Color::Hex(format!("#{:02X}{:02X}{:02X}", r, g, b))
+    }
+}
+
+impl From<[u8; 3]> for Color {
+    fn from([r, g, b]: [u8; 3]) -> Self {
+        Color::Hex(format!("#{:02X}{:02X}{:02X}", r, g, b))
+    }
 }
 
 impl Serialize for Color {
@@ -569,10 +594,10 @@ impl Component {
         match self {
             Component::String(s) => Cow::Borrowed(s),
             Component::Object(obj) => {
-                if obj.extra.is_none() {
-                    if let Some(text) = &obj.text {
-                        return Cow::Borrowed(text);
-                    }
+                if obj.extra.is_none()
+                    && let Some(text) = &obj.text
+                {
+                    return Cow::Borrowed(text);
                 }
 
                 let mut result = String::new();
@@ -849,13 +874,20 @@ fn parse_hex_color(s: &str) -> Option<[u8; 3]> {
     None
 }
 
+
+
 impl FromStr for Color {
     type Err = ParseColorError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if parse_hex_color(s).is_none() {
-            return Err(ParseColorError);
+        if let Ok(named) = s.parse::<NamedColor>() {
+            return Ok(Color::Named(named));
         }
-        Ok(Color::Hex(s.to_string()))
+
+        if parse_hex_color(s).is_some() {
+            return Ok(Color::Hex(s.to_string()));
+        }
+
+        Err(ParseColorError)
     }
 }
 

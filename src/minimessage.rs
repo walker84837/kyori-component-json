@@ -291,7 +291,7 @@ impl<'a> Parser<'a> {
             "yellow" => self.push_style(|s| s.color = Some(Color::Named(NamedColor::Yellow)))?,
             "white" => self.push_style(|s| s.color = Some(Color::Named(NamedColor::White)))?,
             "color" | "colour" | "c" if !args.is_empty() => {
-                if let Some(color) = parse_color(&args[0]) {
+                if let Some(color) = args[0].parse::<Color>().ok() {
                     self.push_style(|s| s.color = Some(color))?
                 }
             }
@@ -524,13 +524,13 @@ impl Serializer {
         // Apply style changes
         let mut style_changes = Vec::new();
 
-        if let Some(color) = &obj.color {
-            if Some(color) != prev_style.color.as_ref() {
-                if let Some(named) = get_named_color(color) {
-                    style_changes.push(named.to_string());
-                } else if let Color::Hex(hex) = color {
-                    style_changes.push(format!("color:{hex}"));
-                }
+        if let Some(color) = &obj.color
+            && Some(color) != prev_style.color.as_ref()
+        {
+            if let Some(named) = color.to_named() {
+                style_changes.push(named.to_string());
+            } else if let Color::Hex(hex) = color {
+                style_changes.push(format!("color:{hex}"));
             }
         }
 
@@ -607,42 +607,7 @@ impl Serializer {
     }
 }
 
-fn parse_color(input: &str) -> Option<Color> {
-    if let Ok(named) = input.parse::<NamedColor>() {
-        return Some(Color::Named(named));
-    }
 
-    if input.starts_with('#') && input.len() == 7 {
-        return Some(Color::Hex(input.to_string()));
-    }
-
-    None
-}
-
-fn get_named_color(color: &Color) -> Option<NamedColor> {
-    match color {
-        Color::Named(named) => Some(*named),
-        Color::Hex(hex) => match hex.as_str() {
-            "#000000" => Some(NamedColor::Black),
-            "#0000AA" => Some(NamedColor::DarkBlue),
-            "#00AA00" => Some(NamedColor::DarkGreen),
-            "#00AAAA" => Some(NamedColor::DarkAqua),
-            "#AA0000" => Some(NamedColor::DarkRed),
-            "#AA00AA" => Some(NamedColor::DarkPurple),
-            "#FFAA00" => Some(NamedColor::Gold),
-            "#AAAAAA" => Some(NamedColor::Gray),
-            "#555555" => Some(NamedColor::DarkGray),
-            "#5555FF" => Some(NamedColor::Blue),
-            "#55FF55" => Some(NamedColor::Green),
-            "#55FFFF" => Some(NamedColor::Aqua),
-            "#FF5555" => Some(NamedColor::Red),
-            "#FF55FF" => Some(NamedColor::LightPurple),
-            "#FFFF55" => Some(NamedColor::Yellow),
-            "#FFFFFF" => Some(NamedColor::White),
-            _ => None,
-        },
-    }
-}
 
 #[cfg(test)]
 mod tests {
