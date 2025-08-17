@@ -29,10 +29,10 @@ jobs:
           cache-workspace-crates: true
 
       - name: Cargo build (debug)
-        run: cargo build --locked --verbose
+        run: cargo build --features minimessage --locked --verbose
 
       - name: Cargo clippy
-        run: cargo clippy
+        run: cargo clippy --features minimessage
 
       - name: Cargo test
         run: cargo test --features minimessage --locked --verbose
