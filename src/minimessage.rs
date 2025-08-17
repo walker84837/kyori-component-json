@@ -288,7 +288,7 @@ impl<'a> Parser<'a> {
             "yellow" => self.push_style(|s| s.color = Some(Color::Named(NamedColor::Yellow)))?,
             "white" => self.push_style(|s| s.color = Some(Color::Named(NamedColor::White)))?,
             "color" | "colour" | "c" if !args.is_empty() => {
-                if let Some(color) = args[0].parse::<Color>().ok() {
+                if let Ok(color) = args[0].parse::<Color>() {
                     self.push_style(|s| s.color = Some(color))?
                 }
             }
