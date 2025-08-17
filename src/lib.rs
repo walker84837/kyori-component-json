@@ -549,7 +549,7 @@ impl Component {
 
     /// Returns the "plain text" representation of this component as a [`Cow<str>`].
     ///
-    /// This is the closest equivalent to the [Kyori's plain text serializer](https://javadoc.io/doc/net.kyori/adventure-text-serializer-plain/latest/net/kyori/adventure/text/serializer/plain/PlainTextComponentSerializer.html)
+    /// This is the closest equivalent to [Kyori's plain text serializer](https://javadoc.io/doc/net.kyori/adventure-text-serializer-plain/latest/net/kyori/adventure/text/serializer/plain/PlainTextComponentSerializer.html)
     ///
     /// # Behavior by variant
     ///
@@ -564,7 +564,7 @@ impl Component {
     /// # Notes
     ///
     /// This method may allocate a new `String` if concatenation is needed.  
-    /// Use [`get_plain_text`] if you only need a cheap, O(1) borrowed string from a single component.
+    /// Use [`Self::get_plain_text`] if you only need a cheap, O(1) borrowed string from a single component.
     pub fn to_plain_text(&self) -> Cow<'_, str> {
         match self {
             Component::String(s) => Cow::Borrowed(s),
@@ -598,7 +598,7 @@ impl Component {
 
     /// Returns the raw `text` field if this component is a string or an object with a text field.
     ///
-    /// Does not traverse children or consider other fields. Cheap, O(1) operation alternative to [`to_plain_text`].
+    /// Does not traverse children or consider other fields. Cheap, O(1) operation alternative to [`Self::to_plain_text`].
     pub fn get_plain_text(&self) -> Option<&str> {
         match self {
             Component::String(s) => Some(s),
