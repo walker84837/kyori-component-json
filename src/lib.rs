@@ -547,11 +547,62 @@ impl Component {
         self.append(Component::text(" "))
     }
 
-    /// Gets plain text from component, if it is a string
-    pub fn get_plain_text(&self) -> Option<Cow<'_, str>> {
+    /// Returns the "plain text" representation of this component as a [`Cow<str>`].
+    ///
+    /// This is the closest equivalent to the [Kyori's plain text serializer](https://javadoc.io/doc/net.kyori/adventure-text-serializer-plain/latest/net/kyori/adventure/text/serializer/plain/PlainTextComponentSerializer.html)
+    ///
+    /// # Behavior by variant
+    ///
+    /// - `Component::String`: Returns a borrowed `&str` of the string content.
+    /// - `Component::Object`:  
+    ///     - If the object has `text` and no `extra` children, returns a borrowed `&str`.
+    ///     - If the object has `extra` children, returns an owned `String` concatenating
+    ///       the object's `text` (if any) with the `to_plain_text` of each child.
+    /// - `Component::Array`: Returns an owned `String` concatenating the `to_plain_text`
+    ///   of each element in the array.
+    ///
+    /// # Notes
+    ///
+    /// This method may allocate a new `String` if concatenation is needed.  
+    /// Use [`get_plain_text`] if you only need a cheap, O(1) borrowed string from a single component.
+    pub fn to_plain_text(&self) -> Cow<'_, str> {
         match self {
-            Component::String(s) => Some(Cow::Borrowed(s)),
-            Component::Object(obj) => obj.text.as_deref().map(Cow::Borrowed),
+            Component::String(s) => Cow::Borrowed(s),
+            Component::Object(obj) => {
+                if obj.extra.is_none() {
+                    if let Some(text) = &obj.text {
+                        return Cow::Borrowed(text);
+                    }
+                }
+
+                let mut result = String::new();
+                if let Some(text) = &obj.text {
+                    result.push_str(text);
+                }
+                if let Some(children) = &obj.extra {
+                    for child in children {
+                        result.push_str(&child.to_plain_text());
+                    }
+                }
+                Cow::Owned(result)
+            }
+            Component::Array(components) => {
+                let mut result = String::new();
+                for c in components {
+                    result.push_str(&c.to_plain_text());
+                }
+                Cow::Owned(result)
+            }
+        }
+    }
+
+    /// Returns the raw `text` field if this component is a string or an object with a text field.
+    ///
+    /// Does not traverse children or consider other fields. Cheap, O(1) operation alternative to [`to_plain_text`].
+    pub fn get_plain_text(&self) -> Option<&str> {
+        match self {
+            Component::String(s) => Some(s),
+            Component::Object(obj) => obj.text.as_deref(),
             _ => None,
         }
     }
