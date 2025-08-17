@@ -67,11 +67,8 @@ impl ComponentParser for MiniMessage {
 
     /// Parse input from MiniMessage string to Component using default configuration.
     fn from_string(input: impl AsRef<str>) -> Result<Component, Self::Err> {
-        // FIXME: use default config since we can't access instance data in trait method as that
-        // isn't idiomatic Rust
-        let config = MiniMessageConfig::default();
-        let mut parser = Parser::new(input.as_ref(), &config);
-        parser.parse()
+        let mm = MiniMessage::new();
+        mm.parse(input)
     }
 }
 
@@ -607,8 +604,6 @@ impl Serializer {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -662,5 +657,36 @@ mod tests {
         let result = MiniMessage::to_string(&comp).unwrap();
         // TODO: is <yellow>Hello </yellow><red>world</red> technically correct?
         assert_eq!(result, "<yellow>Hello <red>world</red></yellow>");
+    }
+
+    // TODO: comprehensive tests would involve traversing the parsed MiniMessage's tree
+    #[test]
+    fn test_readme_example_basic_red_text() {
+        let mm = MiniMessage::new();
+        let comp = mm.parse("<red>Hello, world!</red>").unwrap();
+        // Assert that the component is a text component with red color
+        if let Component::Object(obj) = comp {
+            assert_eq!(obj.text, Some("Hello, world!".to_string()));
+            assert_eq!(obj.color, Some(Color::Named(NamedColor::Red)));
+        } else {
+            panic!("Expected object component");
+        }
+    }
+
+    #[test]
+    fn test_readme_example_nested_colors_and_bold() {
+        let mm = MiniMessage::new();
+        let comp = mm
+            .parse("<green>This is <blue>blue</blue> and <b>bold</b>!</green>")
+            .unwrap();
+
+        assert_eq!(comp.to_plain_text(), "This is blue and bold!");
+    }
+
+    #[test]
+    fn test_readme_example_click_and_hover_events() {
+        let mm = MiniMessage::new();
+        let comp = mm.parse("<hover:show_text:\"<red>Hover Text</red>\"><click:open_url:\"https://example.com\">Clickable Link</click></hover>").unwrap();
+        assert_eq!(comp.to_plain_text(), "Clickable Link");
     }
 }
