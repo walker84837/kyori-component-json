@@ -94,8 +94,10 @@
 #![forbid(unsafe_code)]
 
 mod colors;
-pub mod minimessage;
 pub mod parsing;
+
+#[cfg(feature = "minimessage")]
+pub mod minimessage;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

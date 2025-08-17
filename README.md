@@ -28,6 +28,7 @@ But it also empowers you to:
 ## Simple Examples
 
 ### Basic Colored Text
+
 ```rust
 use kyori_component_json::*;
 
@@ -40,6 +41,7 @@ let message = Component::text("Hello Minecraft!")
 ```
 
 ### Clickable Text
+
 ```rust
 let clickable = Component::text("Click me!")
     .click_event(Some(ClickEvent::RunCommand {
@@ -51,6 +53,7 @@ let clickable = Component::text("Click me!")
 ```
 
 ### Combining Components
+
 ```rust
 let combined = Component::text("Welcome, ")
     .append(
@@ -83,6 +86,27 @@ let message = Component::text("Server Notice: ")
 // Convert to Minecraft JSON
 let json = serde_json::to_string(&message).unwrap();
 ```
+
+### MiniMessage support (Optional)
+
+This library includes experimental support for parsing and serializing MiniMessage strings, a simplified [markup format](https://docs.advntr.dev/minimessage/index.html). This feature is disabled by default.
+
+To enable it, add the `minimessage` feature to your `Cargo.toml`:
+
+```toml
+[dependencies]
+kyori-component-json = { version = "0.2", features = ["minimessage"] }
+```
+
+Once enabled, you can use the `minimessage` module:
+
+```rust
+use kyori_component_json::minimessage::MiniMessage;
+
+let component = MiniMessage::parse("<red>Hello</red> <blue>World!</blue>");
+// ... use component ...
+```
+
 
 ## Learning More
 

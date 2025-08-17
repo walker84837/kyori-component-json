@@ -35,5 +35,4 @@ jobs:
         run: cargo clippy
 
       - name: Cargo test
-        run: cargo test --locked --verbose
-
+        run: cargo test --features minimessage --locked --verbose
