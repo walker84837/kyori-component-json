@@ -89,7 +89,7 @@ let json = serde_json::to_string(&message).unwrap();
 
 ### MiniMessage support (Optional)
 
-This library includes experimental support for parsing and serializing MiniMessage strings, a simplified [markup format](https://docs.advntr.dev/minimessage/index.html). This feature is disabled by default.
+This library includes experimental support for parsing and serializing MiniMessage strings, a simplified [markup format](https://docs.papermc.io/adventure/minimessage/). This feature is disabled by default.
 
 To enable it, add the `minimessage` feature to your `Cargo.toml`:
 
