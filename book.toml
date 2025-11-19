@@ -1,0 +1,5 @@
+[book]
+authors = ["winlogon"]
+language = "en"
+src = "src"
+title = "kyori-component-json"
