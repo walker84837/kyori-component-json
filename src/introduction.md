@@ -72,7 +72,7 @@ These interactive features allow for rich, dynamic text components that can resp
 
 ## What can you do with this library?
 
-Now that we know what a text component is, we understand what this library's purpose better.
+Now that we understand what a text component is, we have a better understanding of the library's purpose.
 
 This library simplifies the creation, manipulation, and de/serialization of these complex JSON structures, allowing developers to:
 
