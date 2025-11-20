@@ -34,3 +34,4 @@ jobs:
           source: "book"
           target: "/home/actions/repos/kyori-component-json"
           strip_components: 1
+          rm: true
