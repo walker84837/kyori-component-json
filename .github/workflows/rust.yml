@@ -31,5 +31,6 @@ jobs:
           username: actions
           key: ${{ secrets.VPS_PRIV_KEY }}
           port: 22
-          source: "book/*"
+          source: "book"
           target: "/home/actions/repos/kyori-component-json"
+          strip_components: 1
