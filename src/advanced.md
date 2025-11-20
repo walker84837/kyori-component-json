@@ -1,52 +1,74 @@
-# Advanced Usage: Minecraft Scenarios
+# Using `Component` thoroughly
 
-The `kyori-component-json` library provides a robust way to construct rich text components for various Minecraft applications. This section delves into more advanced scenarios, demonstrating how to leverage the library for interactive messages, complex data displays, and programmatic command generation.
+As we learned in the previous chapter, we understand what text components are, and how to use `kyori-component-json` effectively and in a concise way.
 
-## Understanding Minecraft Components
+So far, it's a pretty simple library, but it gives you more tools to make this library even more flexible!
 
-At its core, `kyori-component-json` models Minecraft's "raw JSON text format" using the `Component` enum. This enum represents the three primary ways Minecraft handles text:
+## Understanding the `Component` enum
 
-*   **`Component::String(String)`**: A simple string, often used as a shorthand for basic text. When serialized, it becomes `{"text": "your string"}`.
-*   **`Component::Array(Vec<Component>)`**: A list of components. This is how Minecraft handles messages composed of multiple styled parts, where each part is its own `Component`.
-*   **`Component::Object(Box<ComponentObject>)`**: The most comprehensive form, representing a single text component with all its potential properties (text content, color, formatting, events, etc.). Most of your rich text creation will involve building `ComponentObject`s.
+At its core, `kyori-component-json` models Minecraft's text component format using the `Component` enum. This enum represents the three primary ways Minecraft handles text:
 
-The `ComponentObject` struct encapsulates all the styling and interactive properties a text component can have, such as `color`, `bold`, `italic`, `click_event`, `hover_event`, and more. The library's builder-style methods (e.g., `.color()`, `.decoration()`) internally construct and modify these `ComponentObject` instances.
+* **`Component::String(String)`**: is a simple string, often used as a shorthand for basic text. When serialized, it becomes `{"text": "your string"}`.
+* **`Component::Array(Vec<Component>)`**: is a list of components. This is how Minecraft handles messages composed of multiple styled parts, where each part is its own `Component`.
+* **`Component::Object(Box<ComponentObject>)`**: is the most extensive form, representing a single text component with all its possible properties. Most of your rich text creation will involve building `ComponentObject`s.
 
-## Building Interactive Messages
+The `ComponentObject` struct:
+- holds all the styling and interactive properties a text component can have, such as `color`, and so on;
+- contains builder methods like `.color()` or `.decoration()` that internally construct and modify these `ComponentObject` instances.
 
-Minecraft's JSON text components shine when creating interactive elements. You can combine colors, formatting, click events, and hover events to build engaging messages.
+## Building interactive messages
 
-### Clickable Commands and Hover Text
+As shown in the previous chapter, Minecraft's text components can be made interactive. You can make cool messages by mixing colors, formats, click and hover events.
 
-Let's create a message that, when clicked, runs a command, and when hovered over, displays additional information. This demonstrates how `ClickEvent` and `HoverEvent` are attached to a `Component` to add interactivity.
+### Clickable commands and hover text
+
+Let's create a message that runs a command when clicked and displays extra information when hovered over.
+
+This demonstrates how the ClickEvent and HoverEvent are attached to a component to make it interactive.
 
 ```rust
 use kyori_component_json::{Component, ClickEvent, HoverEvent, Color, NamedColor};
 use serde_json;
 
 fn main() {
-    let interactive_message = Component::text("Click me to teleport!")
-        .color(Some(Color::Named(NamedColor::Aqua))) // Set the text color to aqua
-        .click_event(Some(ClickEvent::RunCommand {
-            command: "/tp @s 100 64 100".to_string(), // Define the command to run on click
-        }))
-        .hover_event(Some(HoverEvent::ShowText {
-            // Define the text to show on hover
-            value: Component::text("Teleports you to spawn coordinates (100, 64, 100)")
-                .color(Some(Color::Named(NamedColor::Gray))),
-        }));
+    let interactive_message = component!(
+        text: "Click me to teleport!", {
+            color: aqua,
+            click_event: run_command { command: "/tp @s 100 64 100".to_string() },
+            hover_event: show_text {
+                component!(
+                    text: "Teleports you to spawn coordinates (100, 64, 100)", { color: gray }
+                )
+            }
+        }
+    )
 
     // Serialize the component to a JSON string, ready for a /tellraw command
     let json_output = serde_json::to_string_pretty(&interactive_message).unwrap();
-    println!("{}", json_output);
+    println!("{json_output}");
+
     // This JSON can be used directly in Minecraft:
-    // /tellraw @a {"text":"Click me to teleport!","color":"aqua","clickEvent":{"action":"run_command","value":"/tp @s 100 64 100"},"hoverEvent":{"action":"show_text","value":{"text":"Teleports you to spawn coordinates (100, 64, 100)","color":"gray"}}}
+    // /tellraw @a {"text":"Click me to teleport!","color":"aqua","clickEvent":{...},"hoverEvent":{...}}
 }
 ```
 
-### Combining Multiple Components
+This is a good example where `component!()` can be almost fundamental to creating advanced components concisely.
 
-Complex messages are often built by appending multiple `Component` instances together. The `append()` method allows you to chain components, and `append_newline()` or `append_space()` add common separators. Styling applied later in the chain can act as a fallback or override previous styles for the current component and its children.
+### Combining multiple components
+
+Complex messages can also be built by appending multiple `Component`s together.
+
+In `Component`, the `append()` method allows you to chain components, and `append_newline()` or `append_space()` add common separators.
+
+<!--
+
+TODO: what does this mean exactly? This should be phrased in a simpler way, or explained further.
+
+Styling applied later in the chain can act as a fallback or override previous styles for the current component and its children.
+
+-->
+
+We'll use the low-level Component API to make this component.
 
 ```rust
 use kyori_component_json::{Component, ClickEvent, Color, NamedColor, TextDecoration};
@@ -114,7 +136,7 @@ fn main() {
 
 ### Keybinds
 
-To instruct players about controls, you can use `Component::keybind()` to display the current key assigned to a specific action. The game client will automatically show the player's configured key.
+To show players controls, you can use `Component::keybind()` to display the current key assigned to a specific action. The Minecraft client will automatically show the player's configured key.
 
 ```rust
 use kyori_component_json::{Component, Color, NamedColor, TextDecoration};
@@ -124,7 +146,7 @@ fn main() {
     let keybind_message = Component::text("Press ")
         .color(Some(Color::Named(NamedColor::Gray)))
         .append(
-            Component::keybind("key.attack") // Minecraft's internal keybind ID (e.g., "key.attack", "key.jump")
+            Component::keybind("key.attack") // Minecraft's internal keybind ID (e.g., "key.attack", etc.)
                 .color(Some(Color::Named(NamedColor::Red)))
                 .decoration(TextDecoration::Bold, Some(true))
         )
@@ -137,9 +159,9 @@ fn main() {
 }
 ```
 
-## Working with Raw JSON: Serialization and Deserialization
+## Working directly with JSON: serialization and deserialization
 
-The core purpose of `kyori-component-json` is to facilitate the creation and manipulation of `Component` structures that can be easily converted to and from Minecraft's raw JSON text format. This conversion is handled seamlessly by `serde_json` due to the library's integration with `serde`.
+One of the core purpose of `kyori-component-json` is to simplify the creation of `Component` structures that can be easily converted to and from JSON. This conversion is done seamlessly by `serde_json`, but you could convert a `Component` to any other format (like CBOR or YAML).
 
 ```rust
 use kyori_component_json::{Component, Color, NamedColor};
@@ -177,7 +199,9 @@ fn main() {
     let complex_component: Component = serde_json::from_str(complex_json).unwrap();
     println!("\nDeserialized complex component: {:?}", complex_component);
 }
-# Advanced Usage: Custom Parsers and MiniMessage
+```
+
+# Custom parsers and MiniMessage
 
 While `kyori-component-json` excels at programmatic construction of Minecraft components, you might encounter situations where you need to parse text from other formats or serialize components into a more human-readable markup. This is where custom parsers and serializers, exemplified by the built-in MiniMessage feature, become invaluable.
 
