@@ -1,38 +1,29 @@
-name: CI
+name: mdBook Actions Workflow
 
 on:
   push:
+    branches:
+      - docs
   pull_request:
 
 jobs:
-  test:
-    name: Build & Test on ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
-    runs-on: ${{ matrix.os }}
-
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust registry & target
-        uses: Swatinem/rust-cache@v2
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
         with:
-          prefix-key: v0-rust
-          shared-key: rust-cache
-          cache-targets: true
-          cache-bin: true
-          cache-workspace-crates: true
+          mdbook-version: 'latest'
 
-      - name: Cargo build (debug)
-        run: cargo build --features minimessage --locked --verbose
+      - run: mdbook build
 
-      - name: Cargo clippy
-        run: cargo clippy --features minimessage
-
-      - name: Cargo test
-        run: cargo test --features minimessage --locked --verbose
+      - name: Deploy Book Contents
+        uses: peaceiris/actions-gh-pages@v3
+        if: ${{ github.ref == 'refs/heads/main' }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./book
