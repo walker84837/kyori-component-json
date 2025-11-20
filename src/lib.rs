@@ -94,6 +94,7 @@
 #![forbid(unsafe_code)]
 
 mod colors;
+mod macros;
 pub mod parsing;
 
 #[cfg(feature = "minimessage")]
@@ -501,6 +502,26 @@ pub enum TextDecoration {
     Strikethrough,
     /// Obfuscated (scrambled) text
     Obfuscated,
+}
+
+impl FromStr for TextDecoration {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.eq_ignore_ascii_case("bold") {
+            Ok(TextDecoration::Bold)
+        } else if s.eq_ignore_ascii_case("italic") {
+            Ok(TextDecoration::Italic)
+        } else if s.eq_ignore_ascii_case("underlined") {
+            Ok(TextDecoration::Underlined)
+        } else if s.eq_ignore_ascii_case("strikethrough") {
+            Ok(TextDecoration::Strikethrough)
+        } else if s.eq_ignore_ascii_case("obfuscated") {
+            Ok(TextDecoration::Obfuscated)
+        } else {
+            Err(())
+        }
+    }
 }
 
 /// Style properties for merging (unused in current implementation)
@@ -964,5 +985,74 @@ mod tests {
 
         let component: Component = serde_json::from_str(raw_json).unwrap();
         println!("Message: {component:#?}");
+    }
+
+    #[test]
+    fn test_component_macro() {
+        let component = component!(text: "Hello, ", {
+            color: yellow,
+            append: (component!(text: "World!", {
+                color: white,
+                decoration: bold & true,
+            })),
+        });
+
+        let expected = Component::text("Hello, ")
+            .color(Some(Color::Named(NamedColor::Yellow)))
+            .append(
+                Component::text("World!")
+                    .color(Some(Color::Named(NamedColor::White)))
+                    .decoration(TextDecoration::Bold, Some(true)),
+            );
+
+        assert_eq!(component, expected);
+    }
+
+    #[test]
+    fn test_component_macro_new_syntax() {
+        let component_named = component!(text: "hello", {
+            color: red,
+        });
+        let expected_named = Component::text("hello").color(Some(Color::Named(NamedColor::Red)));
+        assert_eq!(component_named, expected_named);
+
+        let component_hex = component!(text: "world", {
+            color: #123456,
+        });
+        let expected_hex = Component::text("world").color(Some(Color::Hex("#123456".to_string())));
+        assert_eq!(component_hex, expected_hex);
+
+        let component_mixed = component!(text: "test", {
+            color: blue,
+            append: (Component::text("more")),
+        });
+        let expected_mixed = Component::text("test")
+            .color(Some(Color::Named(NamedColor::Blue)))
+            .append(Component::text("more"));
+        assert_eq!(component_mixed, expected_mixed);
+
+        let component_deco = component!(text: "decorated", {
+            decoration: bold & true,
+        });
+        let expected_deco =
+            Component::text("decorated").decoration(TextDecoration::Bold, Some(true));
+        assert_eq!(component_deco, expected_deco);
+
+        let component_full = component!(text: "full", {
+            font: "uniform",
+            insertion: "inserted",
+            click_event: run_command { command: "command".to_string() },
+            hover_event: show_text { component!(text: "hover") },
+        });
+        let expected_full = Component::text("full")
+            .font(Some("uniform".to_string()))
+            .insertion(Some("inserted".to_string()))
+            .click_event(Some(ClickEvent::RunCommand {
+                command: "command".to_string(),
+            }))
+            .hover_event(Some(HoverEvent::ShowText {
+                value: component!(text: "hover"),
+            }));
+        assert_eq!(component_full, expected_full);
     }
 }
