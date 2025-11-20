@@ -19,6 +19,8 @@ But it also empowers you to:
 - Add clickable text that runs commands when clicked
 - Make hover text that shows extra information
 
+We also have an [mdBook page](https://walker84837.github.io/kyori-component-json/) for more detailed information on how to use this library.
+
 ### When would you use this?
 
 1. **Command Generators**: Create `/tellraw` or `/title` commands programmatically
