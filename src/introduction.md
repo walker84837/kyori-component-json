@@ -4,9 +4,19 @@
 
 This system is used and fundamental for displaying and interacting with text in Minecraft. It is used in commands like /tellraw, and in other parts, like books and signs.
 
+## Why is this library named the way it is?
+
+I'll start by breaking down the name in three parts:
+
+- **"kyori"**: The name tries to replicate [Kyori's](https://kyori.net/) Adventure `Component` API, while making it idiomatic in Rust;
+- **"component"**: refers to Minecraft's *text component format*;
+- **"json"**: The components are receieved via JSON (via the [JSON text serializer](https://mvnrepository.com/artifact/net.kyori/adventure-text-serializer-gson)), and deserialized with serde.
+
+Now that the library has switched to [PaperMC](https://github.com/PaperMC/adventure), I'm keeping the same name to avoid causing any disruptions for those who depend on this crate.
+
 ## What are components?
 
-In order to understand how to use this library, you should be familiar with Minecraft's text components, which enable the game to send and display rich, interactive text to players.
+In order to understand how to use this library, you should be familiar with Minecraft's text components. These components enable you to send and display rich, interactive text to players.
 
 This format is used in various parts of the game like written books, signs, command messages (e.g., `/tellraw` and `/title`), and other UI elements.
 
@@ -16,7 +26,7 @@ Text components (also known as raw JSON text) are made up of different types of 
 
 For example, if a text component has a certain color or style (like bold or italic), its children will share those properties unless specifically overridden.
 
-The format of these text components uses structured JSON objects that can include a wide range of properties like color, font, boldness, italics, and even hover or click events. They are highly customizable, allowing for complex interactions and styling.
+The format of these text components uses structured JSON objects[^1] that can include a wide range of properties like color, font, boldness, italics, and even hover or click events. They are highly customizable, allowing for complex interactions and styling.
 
 For instance, you could make a piece of text:
 
@@ -68,7 +78,7 @@ Let's start with a simple example to display "Hello Minecraft!" in red and bold.
 
 ```rust
 use kyori_component_json::{Component, Color, NamedColor, TextDecoration};
-use serde_json; // Required for serialization
+use serde_json; // Required for getting the Component as Minecraft-compatible JSON
 
 fn main() {
     let message = Component::text("Hello Minecraft!")
@@ -88,3 +98,17 @@ fn main() {
 This basic example demonstrates how easily you can create a `Component` and apply styling. The library handles the conversion to the specific JSON format that Minecraft understands.
 
 ## `component!()` macro
+
+Since the component builder can be verbose for complex components, there is a `component!()` macro to simplify it. Here's a short example to get you started:
+
+```rust,no_run
+let component = component!(text: "Hello World");
+```
+
+This creates a simple hello world component with no formatting. You can find more at the [Rust docs](https://docs.rs/kyori-component-json)
+
+### Why not just make the builder more fluent?
+
+As it stands, the `Component` enum aims to closely be a Rust representation of a raw JSON text component, with a few functions to simplify creating and handling one at a low level.
+
+[^1]: Within Minecraft they are stored as SNBT, but this library uses JSON for it (to be sent to a Paper server, using the JSON text serializer)
