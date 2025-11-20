@@ -32,4 +32,4 @@ jobs:
           key: ${{ secrets.VPS_PRIV_KEY }}
           port: 22
           source: "book/*"
-          target: "/home/actions/kyori-component-json"
+          target: "/home/actions/repos/kyori-component-json"
