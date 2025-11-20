@@ -10,7 +10,7 @@ I'll start by breaking down the name in three parts:
 
 - **"kyori"**: The name tries to replicate [Kyori's](https://kyori.net/) Adventure `Component` API, while making it idiomatic in Rust;
 - **"component"**: refers to Minecraft's *text component format*;
-- **"json"**: The components are receieved via JSON (via the [JSON text serializer](https://mvnrepository.com/artifact/net.kyori/adventure-text-serializer-gson)), and deserialized with serde.
+- **"json"**: The components are parsed (or received via JSON from the [JSON text serializer](https://mvnrepository.com/artifact/net.kyori/adventure-text-serializer-gson)), and deserialized with serde.
 
 Now that the library has switched to [PaperMC](https://github.com/PaperMC/adventure), I'm keeping the same name to avoid causing any disruptions for those who depend on this crate.
 
@@ -19,6 +19,10 @@ Now that the library has switched to [PaperMC](https://github.com/PaperMC/advent
 In order to understand how to use this library, you should be familiar with Minecraft's text components. These components enable you to send and display rich, interactive text to players.
 
 This format is used in various parts of the game like written books, signs, command messages (e.g., `/tellraw` and `/title`), and other UI elements.
+
+Minecraft still uses JSON text components in places like Adventure, plugins, and commands such as `/tellraw`. These systems expect plain JSON and work the same as before. However, starting in Java Edition 1.21.5, Minecraft now stores text components inside NBT data using SNBT instead of JSON.
+
+This means JSON is still correct for commands and network usage, but components embedded in NBT, such as books, signs, or block/entity data, must be converted to SNBT (in our case, the *server* does this for us).
 
 ### Structure
 
@@ -49,11 +53,22 @@ There are several types of content that text components can display:
 
 #### Hover events and click events
 
-<!-- TODO: compare this to actual source code docs with ClickEvent and HoverEvent types-->
+Text components can also be interactive. In **click events**, for example, when a player clicks on certain text, it can trigger various actions:
 
-Text components can also be interactive. In **click events**, for example, when a player clicks on certain text, it can trigger actions like running commands (`run_command`), opening URLs (`open_url`), or copying text to the clipboard (`copy_to_clipboard`).
+- `run_command` - Execute a command
+- `suggest_command` - Suggest a command in the chat input
+- `open_url`- Open a URL in the browser
+- `open_file` - Open a file (client-side only)
+- `change_page` - Change page in books
+- `copy_to_clipboard` - Copy text to the clipboard
 
-Additionally, in **hover events**, when hovering over a text component, a tooltip can appear, showing more details like an item's properties (`show_item`) or an entity's name and type (`show_entity`).
+Additionally, in **hover events**, when hovering over a text component, a tooltip can appear showing additional information:
+
+- `show_text` - Display another text component with formatting
+- `show_item` - Show an item's tooltip with properties like item ID, stack count, and additional components
+- `show_entity` - Display entity information including name, entity type ID, and UUID (in either string or integer array format)
+
+These interactive features allow for rich, dynamic text components that can respond to player interactions with various visual feedback and functional actions.
 
 ## What can you do with this library?
 
@@ -109,6 +124,8 @@ This creates a simple hello world component with no formatting. You can find mor
 
 ### Why not just make the builder more fluent?
 
-As it stands, the `Component` enum aims to closely be a Rust representation of a raw JSON text component, with a few functions to simplify creating and handling one at a low level.
+As it stands, the `Component` enum aims to closely be a Rust representation of a raw JSON text component, with a few functions to simplify creating and handling one at a low level. As such, it's not designed to be any more fluent than it is now.
 
-[^1]: Within Minecraft they are stored as SNBT, but this library uses JSON for it (to be sent to a Paper server, using the JSON text serializer)
+The `component!()` macro is a more user-friendly way to create components, and it is recommended to use it in most cases.
+
+[^1]: Within Minecraft they are stored as SNBT, but this library uses JSON. Since `Component` implements serde's Serialize and Deserialize, you can do more than just send components to a server: you can build them, turn them into a string, or parse them back into Components for any purpose
