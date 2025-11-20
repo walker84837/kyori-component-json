@@ -72,22 +72,26 @@ These interactive features allow for rich, dynamic text components that can resp
 
 ## What can you do with this library?
 
-This library simplifies the creation, manipulation, and serialization of these complex JSON structures, enabling developers to:
+Now that we know what a text component is, we understand what this library's purpose better.
 
-* **Create Rich Text:** Easily generate colorful chat messages with various formatting options (bold, italic, underlined, strikethrough, obfuscated).
-* **Add Interactivity:** Implement clickable text that executes commands or opens URLs when a player interacts with it.
-* **Provide Context:** Create hoverable text that displays additional information or other text components when a player hovers over it.
-* **Tooling and Interoperability:** Facilitate seamless interaction between Rust applications and Minecraft clients/servers, making it ideal for building custom tools, plugins, or data pack generators.
+This library simplifies the creation, manipulation, and de/serialization of these complex JSON structures, allowing developers to:
+
+* *Create rich text* by generating colorful chat messages with extensive formatting options;
+* *Add interactivity* by implementing clickable text that executes commands or opens URLs when a player interacts with it;
+* *Provide context* when a player hovers over text, displaying additional information or other text components;
+* *Interoperate with Minecraft* clients/servers, making this library necessary for text components.
 
 ## Key scenarios
 
 `kyori-component-json` is particularly useful in scenarios such as:
 
-1.  **Command Generators:** Programmatically construct complex `/tellraw`, `/title`, or `/book` commands.
-2.  **Custom UIs:** Develop interactive in-game books, signs, or other text-based interfaces.
-3.  **Data Packs:** Generate dynamic text components for custom advancements, loot tables, or other data pack elements.
+1. *Command generators:* Programmatically create complex `/tellraw`, `/title`, or `/book` commands.
+2. *Custom UIs:* Make interactive books, signs, or other text-based interfaces.
+3. *Data packs:* Generate dynamic text components for custom advancements, loot tables, or other data pack elements.
 
-## Quick Start: Basic Colored Text
+## Examples
+
+### Basic colored text
 
 Let's start with a simple example to display "Hello Minecraft!" in red and bold.
 
