@@ -132,4 +132,4 @@ As it stands, the `Component` enum aims to closely be a Rust representation of a
 
 The `component!()` macro is a more user-friendly way to create components, and it is recommended to use it in most cases.
 
-[^1]: Within Minecraft they are stored as SNBT, but this library uses JSON. Since `Component` implements serde's Serialize and Deserialize, you can do more than just send components to a server: you can build them, turn them into a string, or parse them back into Components for any purpose
+[^1]: Within Minecraft they are stored as SNBT, but this library uses JSON. Since `Component` implements serde's Serialize and Deserialize, you can do more than just send components to a server: you can build them, turn them into a string, or parse them back into Components for any purpose. This book will use "JSON" to specifically refer to the JSON representation you use in `/tellraw` and with Adventure's JSON text de/serializer.
