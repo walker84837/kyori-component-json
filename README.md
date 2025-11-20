@@ -21,7 +21,7 @@ But it also empowers you to:
 - Add clickable text that runs commands when clicked
 - Make hover text that shows extra information
 
-We also have an [mdBook page](https://walker84837.github.io/kyori-component-json/) for more detailed information on how to use this library.
+We also have more advanced [mdBook docs](https://docs.winlogon.org/kyori-component-json/) for more detailed information on how to use this library.
 
 ### When would you use this?
 
