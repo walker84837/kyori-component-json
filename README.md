@@ -6,7 +6,9 @@
 [![Docs.rs](https://docs.rs/kyori-component-json/badge.svg)](https://docs.rs/kyori-component-json)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://github.com/walker84837/kyori-component-json)
 
-A simple Rust library for creating and working with Minecraft's JSON text components (Java Edition 1.21.5+). This is the same system used in commands like `/tellraw`, books, signs, and more!
+A simple Rust library for creating and working with Minecraft's JSON text components (Java Edition 1.21.5+).
+
+These JSON components are used by commands such as `/tellraw` and can be converted as needed for SNBT-based content like books and signs.
 
 ## What can you do with this?
 
