@@ -1,4 +1,4 @@
-name: mdBook Actions Workflow
+name: Build and Deploy mdBook Docs to VPS
 
 on:
   push:
@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
+
     steps:
       - uses: actions/checkout@v5
 
@@ -19,11 +20,16 @@ jobs:
         with:
           mdbook-version: 'latest'
 
-      - run: mdbook build
+      - name: Build mdBook
+        run: mdbook build
 
-      - name: Deploy Book Contents
-        uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.ref == 'refs/heads/docs' }}
+      # Deploy to VPS over SSH
+      - name: Deploy Book to VPS
+        uses: appleboy/scp-action@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./book
+          host: ${{ secrets.VPS_IP }}
+          username: actions
+          key: ${{ secrets.VPS_PRIV_KEY }}
+          port: 22
+          source: "book/*"
+          target: "/home/actions/kyori-component-json"
