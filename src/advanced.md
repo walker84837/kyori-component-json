@@ -1,4 +1,4 @@
-# Using `Component` thoroughly
+# Advanced component usage and customization
 
 As we learned in the previous chapter, we understand what text components are, and how to use `kyori-component-json` effectively and in a concise way.
 
@@ -60,13 +60,7 @@ Complex messages can also be built by appending multiple `Component`s together.
 
 In `Component`, the `append()` method allows you to chain components, and `append_newline()` or `append_space()` add common separators.
 
-<!--
-
-TODO: what does this mean exactly? This should be phrased in a simpler way, or explained further.
-
-Styling applied later in the chain can act as a fallback or override previous styles for the current component and its children.
-
--->
+When chaining components using `append()`, `append_newline()`, or `append_space()`, styling is inherited from the parent component. However, any explicit styling (e.g., `color`, `decoration`) applied to a child component will override the inherited style for that specific child and its subsequent children, unless they, in turn, explicitly override it. Think of it as a cascading style sheet for your Minecraft text.
 
 We'll use the low-level Component API to make this component.
 
@@ -326,17 +320,29 @@ fn main() {
 }
 ```
 
-## Implementing Your Own Custom Parser
+## Implementing your own custom parser
 
-The `ComponentParser` and `ComponentSerializer` traits are designed for extensibility. If you need to support a different markup format (e.g., a custom BBCode-like syntax, or integration with another rich text system), you would:
+The `ComponentParser` and `ComponentSerializer` traits are designed for extensibility. In case you need to support a different markup format (e.g., a custom Markdown-like syntax, or integration with another rich text system), these traits come in handy.
 
-1.  **Define Your Parser/Serializer Struct:** Create a new struct (e.g., `MyCustomParser`).
-2.  **Implement `ComponentParser`:**
-    *   Define an `Err` associated type for your parsing errors.
-    *   Implement the `from_string` method, which will contain your logic to parse the input string and construct a `Component` object. This often involves tokenizing the input, managing a style stack, and building `Component`s based on your format's rules.
-3.  **Implement `ComponentSerializer` (Optional):**
-    *   Define an `Err` associated type for your serialization errors.
-    *   Implement the `to_string` method, which will traverse a `Component` object and convert it into your desired string format.
+At a high level:
+- The `ComponentParser` trait defines how to convert a string representation of a text component into a `Component` enum. Its primary method is
 
-The `minimessage.rs` source file serves as an excellent reference for how to implement these traits, showcasing the internal logic for handling tags, styles, and nested components. By following this pattern, you can integrate `kyori-component-json` with virtually any rich text input or output format.
+  ```rust
+  fn from_string(input: impl AsRef<str>) -> Result<Component, Self::Err>;
+  ```
+
+- The `ComponentSerializer` trait defines how to convert a `Component` enum back into a string representation. Its primary method is:
+  ```rust
+  fn to_string(component: &Component) -> Result<String, Self::Err>;
+  ```
+
+1.  **Define your parser/serializer struct**: Create a new struct (like `MyCustomParser`).
+2.  **Implement `ComponentParser`**:
+    * Implement the `from_string` method, which will contain your logic to parse the input string and construct a `Component` object. This often involves tokenizing the input, managing a style stack, and building `Component`s based on your format's rules.
+3.  **Implement `ComponentSerializer` (optional)**:
+    * Implement the `to_string` method, which will traverse a `Component` object and convert it into your desired string format.
+
+Both traits have an `Err` associated type for your serialization errors. You have to define one, but it can be any type, including `()` as a placeholder.
+
+The [`minimessage.rs`](https://github.com/walker84837/kyori-component-json/blob/main/src/minimessage.rs) source file is an excellent reference for how to implement these traits. By following this pattern, you can integrate `kyori-component-json` with virtually any rich text input or output format.
 
