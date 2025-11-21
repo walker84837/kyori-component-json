@@ -4,7 +4,13 @@ on:
   push:
     branches:
       - docs
+    paths:
+      - "src/**"
+      - "book.toml"
   pull_request:
+    paths:
+      - "src/**"
+      - "book.toml"
 
 jobs:
   deploy:
