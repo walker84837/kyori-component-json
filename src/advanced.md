@@ -4,13 +4,15 @@ As we learned in the previous chapter, we understand what text components are, a
 
 So far, it's a pretty simple library, but it gives you more tools to make this library even more flexible!
 
+*NOTE*: JSON output examples will be ellipsized (truncated and replaced with "...") for simplicity.
+
 ## Understanding the `Component` enum
 
 At its core, `kyori-component-json` models Minecraft's text component format using the `Component` enum. This enum represents the three primary ways Minecraft handles text:
 
-* **`Component::String(String)`**: is a simple string, often used as a shorthand for basic text. When serialized, it becomes `{"text": "your string"}`.
-* **`Component::Array(Vec<Component>)`**: is a list of components. This is how Minecraft handles messages composed of multiple styled parts, where each part is its own `Component`.
-* **`Component::Object(Box<ComponentObject>)`**: is the most extensive form, representing a single text component with all its possible properties. Most of your rich text creation will involve building `ComponentObject`s.
+- **`Component::String(String)`**: is a simple string, often used as a shorthand for basic text. When serialized, it becomes `{"text": "your string"}`.
+- **`Component::Array(Vec<Component>)`**: is a list of components. This is how Minecraft handles messages composed of multiple styled parts, where each part is its own `Component`.
+- **`Component::Object(Box<ComponentObject>)`**: is the most extensive form, representing a single text component with all its possible properties. Most of your rich text creation will involve building `ComponentObject`s.
 
 The `ComponentObject` struct:
 - holds all the styling and interactive properties a text component can have, such as `color`, and so on;
@@ -124,7 +126,7 @@ fn main() {
     let json_output = serde_json::to_string_pretty(&score_display).unwrap();
     println!("{}", json_output);
     // This JSON can be used directly in Minecraft:
-    // /tellraw @a {"text":"Your current score: ","color":"green","extra":[{"score":{"name":"@p","objective":"my_objective"},"color":"yellow"}, {"text":" points."}]}
+    // /tellraw @a {"text":"Your current score: ","color":"green","extra":[{"score":{...},"color":"yellow"}, {"text":" points."}]}
 }
 ```
 
@@ -197,7 +199,9 @@ fn main() {
 
 # Custom parsers and MiniMessage
 
-While `kyori-component-json` excels at programmatic construction of Minecraft components, you might encounter situations where you need to parse text from other formats or serialize components into a more human-readable markup. This is where custom parsers and serializers, exemplified by the built-in MiniMessage feature, become invaluable.
+While `kyori-component-json` does programmatic construction of Minecraft components decently well, you might be in situations where you need to parse text from other formats or serialize components into a more human-readable markup.
+
+In this case, custom parsers and serializers, become a godsend. The MiniMessage format is built into this library with the `minimessage` feature.
 
 ## What is MiniMessage?
 
@@ -205,20 +209,22 @@ MiniMessage is a lightweight, human-friendly markup format designed for rich tex
 
 MiniMessage is particularly useful when:
 
-*   **User Input:** Allowing players or server administrators to easily format messages without needing to understand complex JSON.
-*   **Configuration Files:** Storing rich text in a more readable format within configuration files.
-*   **Simplified Development:** Quickly prototyping messages without extensive Rust code.
+- You're getting **user input**, allowing players or server administrators to easily format messages without needing to understand complex JSON.
+- Writing **configuration files**, MiniMessage will simplify storing rich text in a more readable format.
+- **Prototyping** by typing simple messages without boilerplate Rust code or complex JSON.
 
-## The `ComponentParser` and `ComponentSerializer` Traits
+You can find more about MiniMessage here: <https://docs.papermc.io/adventure/minimessage/format/>
+
+## The `ComponentParser` and `ComponentSerializer` traits
 
 The `kyori-component-json` library provides two key traits in its `parsing` module that define the interface for converting between string representations and `Component` objects:
 
-*   **`ComponentParser`**: This trait defines a `from_string` method that takes a string input and attempts to convert it into a `Component`.
-*   **`ComponentSerializer`**: This trait defines a `to_string` method that takes a `Component` and converts it into a string representation.
+- **`ComponentParser`**: This trait defines a `from_string` method that takes a string input and attempts to convert it into a `Component`.
+- **`ComponentSerializer`**: This trait defines a `to_string` method that takes a `Component` and converts it into a string representation.
 
 These traits allow for a flexible and extensible system where you can implement support for any text format you desire.
 
-## Using the Built-in MiniMessage Parser
+## Using the built-in MiniMessage parser
 
 We skipped using MiniMessage to build components. The reason is that MiniMessage is a markup format that uses strings. This means errors won't be caught at runtime or compile time. MiniMessage is set to non-strict by default and skips incorrect tags. However, these errors would be caught at runtime if the parser were set to strict mode.
 
@@ -336,17 +342,18 @@ At a high level:
   fn to_string(component: &Component) -> Result<String, Self::Err>;
   ```
 
-The input type is deliberately generic to allow you to provide multiple types, such as:
+The input type in `from_string` is deliberately generic to allow you to provide multiple types, such as:
 - `&str`
 - `String`
 - `&String`
 - `Box<str>`
 - `Cow<'_, str>`
+without restrictions.
 
-1.  **Define your parser/serializer struct**: Create a new struct (like `MyCustomParser`).
-2.  **Implement `ComponentParser`**:
+1. **Define your parser/serializer struct**: Create a new struct (like `MyCustomParser`).
+2. **Implement `ComponentParser`**:
     * Implement the `from_string` method, which will contain your logic to parse the input string and construct a `Component` object. This often involves tokenizing the input, managing a style stack, and building `Component`s based on your format's rules.
-3.  **Implement `ComponentSerializer` (optional)**:
+3. **Implement `ComponentSerializer` (optional)**:
     * Implement the `to_string` method, which will traverse a `Component` object and convert it into your desired string format.
 
 Both traits have an `Err` associated type for your serialization errors. You have to define one, but it can be any type, including `()` as a placeholder.
