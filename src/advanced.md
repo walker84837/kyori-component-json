@@ -220,21 +220,21 @@ These traits allow for a flexible and extensible system where you can implement 
 
 ## Using the Built-in MiniMessage Parser
 
+We skipped using MiniMessage to build components. The reason is that MiniMessage is a markup format that uses strings. This means errors won't be caught at runtime or compile time. MiniMessage is set to non-strict by default and skips incorrect tags. However, these errors would be caught at runtime if the parser were set to strict mode.
+
 The `kyori-component-json` library includes experimental support for MiniMessage parsing and serialization via the `minimessage` feature.
 
 ### Enabling the `minimessage` Feature
 
 To use the MiniMessage functionality, you must enable the `minimessage` feature in your `Cargo.toml`:
 
-```toml
-[dependencies]
-kyori-component-json = { version = "0.2", features = ["minimessage"] }
-serde_json = "1.0" # Required for general JSON serialization/deserialization
+```bash
+cargo add kyori-component-json --features minimessage
 ```
 
 ### Parsing MiniMessage to `Component`
 
-Once enabled, you can use the `MiniMessage` struct to parse MiniMessage strings into `Component` objects.
+As MiniMessage is a markup language, we'll see it's even shorter than using `component!()` or the `Component` builder API:
 
 ```rust
 use kyori_component_json::minimessage::MiniMessage;
@@ -269,7 +269,7 @@ fn main() {
 
 ### Serializing `Component` to MiniMessage
 
-You can also convert a `Component` back into a MiniMessage string.
+You can also convert a component into a MiniMessage string. This is useful when displaying the entire component tree is difficult or impractical. Common examples include user output, logging, and configurations.
 
 ```rust
 use kyori_component_json::minimessage::MiniMessage;
@@ -292,12 +292,12 @@ fn main() {
 }
 ```
 
-### Customizing MiniMessage Parsing
+### Customizing MiniMessage parsing
 
 The `MiniMessageConfig` struct allows you to customize the parsing behavior:
 
-*   `strict`: If `true`, parsing will fail if tags are not properly closed.
-*   `parse_legacy_colors`: If `true`, it will parse legacy Minecraft color codes (e.g., `&a` for green).
+* `strict`: If `true`, parsing will fail if tags are not properly closed.
+* `parse_legacy_colors`: If `true`, it will parse legacy Minecraft color codes (e.g., `&a` for green).
 
 ```rust
 use kyori_component_json::minimessage::{MiniMessage, MiniMessageConfig};
@@ -335,6 +335,13 @@ At a high level:
   ```rust
   fn to_string(component: &Component) -> Result<String, Self::Err>;
   ```
+
+The input type is deliberately generic to allow you to provide multiple types, such as:
+- `&str`
+- `String`
+- `&String`
+- `Box<str>`
+- `Cow<'_, str>`
 
 1.  **Define your parser/serializer struct**: Create a new struct (like `MyCustomParser`).
 2.  **Implement `ComponentParser`**:
