@@ -97,11 +97,11 @@ fn main() {
 }
 ```
 
-## Displaying Dynamic Data
+## Displaying dynamic data
 
 Minecraft's text components can also display dynamic in-game information, which updates automatically. `kyori-component-json` provides specific component types for this.
 
-### Scoreboard Values
+### Scoreboard values
 
 The `Component::score()` constructor allows you to embed a player's score from a specific objective directly into a message. The game client will then resolve and display the current score.
 
@@ -346,3 +346,6 @@ Both traits have an `Err` associated type for your serialization errors. You hav
 
 The [`minimessage.rs`](https://github.com/walker84837/kyori-component-json/blob/main/src/minimessage.rs) source file is an excellent reference for how to implement these traits. By following this pattern, you can integrate `kyori-component-json` with virtually any rich text input or output format.
 
+You can find more about these traits on docs.rs:
+- [`ComponentParser`](https://docs.rs/kyori-component-json/latest/kyori_component_json/parsing/trait.ComponentParser.html)
+- [`ComponentSerializer`](https://docs.rs/kyori-component-json/latest/kyori_component_json/parsing/trait.ComponentSerializer.html)
