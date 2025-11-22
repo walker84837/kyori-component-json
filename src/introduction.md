@@ -89,47 +89,4 @@ This library simplifies the creation, manipulation, and de/serialization of thes
 2. *Custom UIs:* Make interactive books, signs, or other text-based interfaces.
 3. *Data packs:* Generate dynamic text components for custom advancements, loot tables, or other data pack elements.
 
-## Examples
-
-### Basic colored text
-
-Let's start with a simple example to display "Hello Minecraft!" in red and bold.
-
-```rust
-use kyori_component_json::{Component, Color, NamedColor, TextDecoration};
-use serde_json; // Required for getting the Component as Minecraft-compatible JSON
-
-fn main() {
-    let message = Component::text("Hello Minecraft!")
-        .color(Some(Color::Named(NamedColor::Red)))
-        .decoration(TextDecoration::Bold, Some(true));
-
-    // To use this in Minecraft, you'd serialize it to JSON:
-    let json_output = serde_json::to_string(&message).unwrap();
-    println!("{}", json_output);
-    // Expected output: {"text":"Hello Minecraft!","color":"red","bold":true}
-
-    // This JSON can then be used in a /tellraw command:
-    // /tellraw @a {"text":"Hello Minecraft!","color":"red","bold":true}
-}
-```
-
-This basic example demonstrates how easily you can create a `Component` and apply styling. The library handles the conversion to the specific JSON format that Minecraft understands.
-
-## `component!()` macro
-
-Since the component builder can be verbose for complex components, there is a `component!()` macro to simplify it. Here's a short example to get you started:
-
-```rust,no_run
-let component = component!(text: "Hello World");
-```
-
-This creates a simple hello world component with no formatting. You can find more at the [Rust docs](https://docs.rs/kyori-component-json)
-
-### Why not just make the builder more fluent?
-
-As it stands, the `Component` enum aims to closely be a Rust representation of a raw JSON text component, with a few functions to simplify creating and handling one at a low level. As such, it's not designed to be any more fluent than it is now.
-
-The `component!()` macro is a more user-friendly way to create components, and it is recommended to use it in most cases.
-
 [^1]: Within Minecraft they are stored as SNBT, but this library uses JSON. Since `Component` implements serde's Serialize and Deserialize, you can do more than just send components to a server: you can build them, turn them into a string, or parse them back into Components for any purpose. This book will use "JSON" to specifically refer to the JSON representation you use in `/tellraw` and with Adventure's JSON text de/serializer.
