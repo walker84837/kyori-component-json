@@ -6,7 +6,7 @@ This system is used and fundamental for displaying and interacting with text in 
 
 ## Why is this library named the way it is?
 
-I'll start by breaking down the name in three parts:
+We'll start breaking down the name (`kyori-component-json`) in three parts:
 
 - **"kyori"**: The name tries to replicate [Kyori's](https://kyori.net/) Adventure `Component` API, while making it idiomatic in Rust;
 - **"component"**: refers to Minecraft's *text component format*;
@@ -36,7 +36,7 @@ For instance, you could make a piece of text:
 
 - bold
 - red
-- clickable to run a specific command when clicked
+- clickable
 
 all by using a combination of tags and nested components.
 
@@ -89,4 +89,4 @@ This library simplifies the creation, manipulation, and de/serialization of thes
 2. *Custom UIs:* Make interactive books, signs, or other text-based interfaces.
 3. *Data packs:* Generate dynamic text components for custom advancements, loot tables, or other data pack elements.
 
-[^1]: Within Minecraft they are stored as SNBT, but this library uses JSON. Since `Component` implements serde's Serialize and Deserialize, you can do more than just send components to a server: you can build them, turn them into a string, or parse them back into Components for any purpose. This book will use "JSON" to specifically refer to the JSON representation you use in `/tellraw` and with Adventure's JSON text de/serializer.
+[^1]: Within Minecraft they are stored as SNBT, but this library uses JSON. Since `Component` implements serde's `Serialize` and `Deserialize` traits, you can do more than just send components to a server: you can build them, turn them into a string, or parse them back into Components for any purpose. This book will use "JSON" to specifically refer to the JSON representation you use in `/tellraw` and with Adventure's JSON text de/serializer.
