@@ -24,9 +24,12 @@ fn main() {
 
     let json_output = serde_json::to_string_pretty(&score_display).unwrap();
     println!("{}", json_output);
-    // This JSON can be used directly in Minecraft:
-    // /tellraw @a {"text":"Your current score: ","color":"green","extra":[{"score":{...},"color":"yellow"}, {"text":" points."}]}
 }
+```
+
+This JSON can be used directly in Minecraft:
+```json
+/tellraw @a {"text":"Your current score: ","color":"green","extra":[{"score":{...},"color":"yellow"}, {"text":" points."}]}
 ```
 
 ### Keybinds
@@ -49,7 +52,11 @@ fn main() {
 
     let json_output = serde_json::to_string_pretty(&keybind_message).unwrap();
     println!("{}", json_output);
-    // This JSON can be used directly in Minecraft:
-    // /tellraw @a {"text":"Press ","color":"gray","extra":[{"keybind":"key.attack","color":"red","bold":true},{"text":" to attack."}]}
 }
+```
+
+This JSON can be used directly in Minecraft:
+
+```json
+/tellraw @a {"text":"Press ","color":"gray","extra":[{"keybind":"key.attack","color":"red","bold":true},{"text":" to attack."}]}
 ```

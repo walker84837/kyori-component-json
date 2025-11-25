@@ -32,8 +32,7 @@ cargo add kyori-component-json --features minimessage
 As MiniMessage is a markup language, we'll see it's even shorter than using `component!()` or the `Component` builder API:
 
 ```rust
-use kyori_component_json::minimessage::MiniMessage;
-use kyori_component_json::{Component, Color, NamedColor};
+use kyori_component_json::{minimessage::MiniMessage, Component, Color, NamedColor};
 use serde_json;
 
 fn main() {
@@ -67,8 +66,7 @@ fn main() {
 You can also convert a component into a MiniMessage string. This is useful when displaying the entire component tree is difficult or impractical. Common examples include user output, logging, and configurations.
 
 ```rust
-use kyori_component_json::minimessage::MiniMessage;
-use kyori_component_json::{Component, Color, NamedColor, TextDecoration};
+use kyori_component_json::{minimessage::MiniMessage, Component, Color, NamedColor, TextDecoration};
 
 fn main() {
     let component = Component::text("This is ")
