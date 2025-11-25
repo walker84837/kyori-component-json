@@ -19,10 +19,12 @@ fn main() {
     let json_output = serde_json::to_string(&message).unwrap();
     println!("{}", json_output);
     // Expected output: {"text":"Hello Minecraft!","color":"red","bold":true}
-
-    // This JSON can then be used in a /tellraw command:
-    // /tellraw @a {"text":"Hello Minecraft!","color":"red","bold":true}
 }
+```
+
+The output JSON can then be used in a /tellraw command:
+```json
+/tellraw @a {"text":"Hello Minecraft!","color":"red","bold":true}
 ```
 
 This basic example demonstrates how easily you can create a `Component` and apply styling. The library handles the conversion to the specific JSON format that Minecraft understands.
