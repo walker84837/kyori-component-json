@@ -29,7 +29,7 @@ cargo add kyori-component-json --features minimessage
 
 ### Parsing MiniMessage to `Component`
 
-As MiniMessage is a markup language, we'll see it's even shorter than using `component!()` or the `Component` builder API:
+As MiniMessage is a markup language for representing components, we'll see it's even shorter than using `component!()` or the `Component` builder API:
 
 ```rust
 use kyori_component_json::{minimessage::MiniMessage, Component, Color, NamedColor};

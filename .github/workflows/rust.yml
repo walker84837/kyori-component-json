@@ -1,9 +1,8 @@
-name: Build and Deploy mdBook Docs to VPS
+name: Build & Notify Deploy
 
 on:
   push:
-    branches:
-      - docs
+    branches: ["docs"]
     paths:
       - "src/**"
       - "book.toml"
@@ -13,31 +12,117 @@ on:
       - "book.toml"
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      artifact-name: ${{ steps.upload.outputs.artifact-url }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
+      # Setup mdBook
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v2
         with:
           mdbook-version: 'latest'
 
+      # Build the book
       - name: Build mdBook
         run: mdbook build
 
-      # Deploy to VPS over SSH
-      - name: Deploy Book to VPS
-        uses: appleboy/scp-action@v1
+      # Create a tarball of the build output
+      - name: Create tarball
+        run: |
+          mkdir -p output
+          tar -C book -czf output/book.tar.gz .
+
+      # Install the latest Minisign dynamically
+      - name: Install Minisign
+        run: |
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "x86_64" ]; then
+              ARCH="x86_64"
+          elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+              ARCH="aarch64"
+          else
+              echo "Unsupported architecture: $ARCH"
+              exit 1
+          fi
+
+          # Get latest release URL
+          LATEST=$(curl -s https://api.github.com/repos/jedisct1/minisign/releases/latest \
+              | grep "browser_download_url" \
+              | grep "linux" \
+              | grep -v "\.minisig" \
+              | cut -d '"' -f 4 | head -n1)
+
+          if [ -z "$LATEST" ]; then
+              echo "No release found for $ARCH"
+              exit 1
+          fi
+
+          echo "Downloading $LATEST..."
+          curl -sL "$LATEST" -o minisign.tar.gz
+
+          # Extract the binary
+          tar -xzf minisign.tar.gz "minisign-linux/$ARCH/minisign"
+
+          # Make it executable
+          chmod +x minisign-linux/$ARCH/minisign
+
+          # Move to /usr/local/bin
+          sudo mv minisign-linux/$ARCH/minisign /usr/local/bin/
+
+          # Verify correct installation
+          minisign -v
+
+      - name: Prepare Minisign secret key
+        run: |
+          mkdir -p ~/.minisign
+          echo "${{ secrets.MINISIGN_SECRET_KEY }}" > ~/.minisign/minisign.key
+          chmod 600 ~/.minisign/minisign.key
+
+      - name: Sign artifact
+        run: |
+          minisign -S -m output/book.tar.gz
+
+      # Upload artifacts (tarball + signature)
+      - name: Upload artifact
+        id: upload
+        uses: actions/upload-artifact@v4
         with:
-          host: ${{ secrets.VPS_IP }}
-          username: actions
-          key: ${{ secrets.VPS_PRIV_KEY }}
-          port: 22
-          source: "book"
-          target: "/home/actions/repos/kyori-component-json"
-          strip_components: 1
-          rm: true
+          name: book-deploy
+          path: output/book.tar.gz
+
+      # Notify webhook
+      - name: Send deploy webhook
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Encode signature as single-line base64
+          SIGNATURE=$(base64 -w0 output/book.tar.gz.minisig | jq -Rs .)
+          echo "Signature: $SIGNATURE"
+
+          # Get artifact ID for this workflow run
+          RUN_ID=${GITHUB_RUN_ID}
+          ARTIFACT_ID=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/$GITHUB_RUN_ID/artifacts" \
+            | jq '.artifacts[] | select(.name=="book-deploy") | .id')
+
+          echo "Artifact ID: $ARTIFACT_ID"
+
+          # Send webhook
+          curl -X POST https://deploy.winlogon.org/deploy \
+            -H "Content-Type: application/json" \
+            --data-raw "{
+              \"area\": \"repos\",
+              \"project\": \"kyori-component-json\",
+              \"owner\": \"walker84837\",
+              \"repo\": \"kyori-component-json\",
+              \"artifact_id\": \"$ARTIFACT_ID\",
+              \"github_token\": \"$GITHUB_TOKEN\",
+              \"signature\": $SIGNATURE
+            }"
